@@ -1,0 +1,42 @@
+[
+  {
+    "event_id": "EVT-88231",
+    "type": "landslide",
+    "lat": 27.1935,
+    "lng": 88.5142,
+    "timestamp": "2026-08-24T06:42:11+05:30",
+    "photo": "/mock-data/photos/evt-88231.jpg",
+    "vehicle_id": "SK-01-J-4471",
+    "state": "Sikkim"
+  },
+  {
+    "event_id": "EVT-88245",
+    "type": "road_damage",
+    "lat": 27.2701,
+    "lng": 88.5416,
+    "timestamp": "2026-08-24T09:15:03+05:30",
+    "photo": "/mock-data/photos/evt-88245.jpg",
+    "vehicle_id": "SK-04-B-1120",
+    "state": "Sikkim"
+  },
+  {
+    "event_id": "EVT-90114",
+    "type": "flooding",
+    "lat": 26.6541,
+    "lng": 92.8188,
+    "timestamp": "2026-08-24T17:58:40+05:30",
+    "photo": "/mock-data/photos/evt-90114.jpg",
+    "vehicle_id": "AS-01-CC-7783",
+    "state": "Assam"
+  },
+  {
+    "event_id": "EVT-90152",
+    "type": "traffic_block",
+    "lat": 26.1461,
+    "lng": 91.7096,
+    "timestamp": "2026-08-25T07:22:57+05:30",
+    "photo": "/mock-data/photos/evt-90152.jpg",
+    "vehicle_id": "AS-25-C-9034",
+    "state": "Assam"
+  }
+]

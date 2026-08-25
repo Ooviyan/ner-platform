@@ -1,0 +1,66 @@
+[
+  {
+    "id": "SEG-SK-NH10-001",
+    "name": "NH-10 Rangpo - Singtam (Teesta Corridor, Sikkim)",
+    "risk": 0.82,
+    "accessibility": 34,
+    "status": "restricted",
+    "geometry": {
+      "type": "LineString",
+      "coordinates": [
+        [88.5290, 27.1760],
+        [88.5142, 27.1935],
+        [88.5031, 27.2148],
+        [88.4980, 27.2340]
+      ]
+    }
+  },
+  {
+    "id": "SEG-SK-NH10-002",
+    "name": "NH-10 Singtam - Ranipool - Gangtok (Sikkim)",
+    "risk": 0.47,
+    "accessibility": 71,
+    "status": "open",
+    "geometry": {
+      "type": "LineString",
+      "coordinates": [
+        [88.4980, 27.2340],
+        [88.5416, 27.2701],
+        [88.5877, 27.3062],
+        [88.6138, 27.3314]
+      ]
+    }
+  },
+  {
+    "id": "SEG-AS-NH27-014",
+    "name": "NH-27 Jalukbari - Khanapara (Guwahati, Assam)",
+    "risk": 0.19,
+    "accessibility": 93,
+    "status": "open",
+    "geometry": {
+      "type": "LineString",
+      "coordinates": [
+        [91.6650, 26.1520],
+        [91.7096, 26.1461],
+        [91.7580, 26.1372],
+        [91.8000, 26.1290]
+      ]
+    }
+  },
+  {
+    "id": "SEG-AS-NH715-007",
+    "name": "NH-715 Tezpur - Balipara Approach (Assam)",
+    "risk": 0.64,
+    "accessibility": 52,
+    "status": "closed",
+    "geometry": {
+      "type": "LineString",
+      "coordinates": [
+        [92.7930, 26.6330],
+        [92.8188, 26.6541],
+        [92.8402, 26.6733],
+        [92.8600, 26.6900]
+      ]
+    }
+  }
+]

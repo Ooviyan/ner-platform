@@ -1,0 +1,29 @@
+# env
+.env
+.env.local
+.env.*.local
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# node
+node_modules/
+dist/
+build/
+.vite/
+*.log
+
+# ml artifacts
+ml/models/
+*.pkl
+*.joblib
+
+# os / editor
+.DS_Store
+.idea/
+.vscode/

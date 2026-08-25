@@ -1,0 +1,34 @@
+[
+  {
+    "id": "ALT-5001",
+    "event": "EVT-88231",
+    "severity": "critical",
+    "recipients": ["fleet-ops@ner-logistics.in", "SK-01-J-4471", "sdm-rangpo@sikkim.gov.in"],
+    "lang": "en",
+    "status": "sent"
+  },
+  {
+    "id": "ALT-5002",
+    "event": "EVT-88245",
+    "severity": "medium",
+    "recipients": ["SK-04-B-1120", "SK-06-A-2288"],
+    "lang": "ne",
+    "status": "acknowledged"
+  },
+  {
+    "id": "ALT-5003",
+    "event": "EVT-90114",
+    "severity": "high",
+    "recipients": ["fleet-ops@ner-logistics.in", "AS-01-CC-7783"],
+    "lang": "as",
+    "status": "pending"
+  },
+  {
+    "id": "ALT-5004",
+    "event": "EVT-90152",
+    "severity": "low",
+    "recipients": ["AS-25-C-9034"],
+    "lang": "hi",
+    "status": "failed"
+  }
+]

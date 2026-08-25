@@ -1,0 +1,87 @@
+# NER Platform — shared dev stack.
+# Ports are FIXED. Do not change them; four people build against these.
+#
+#   backend      -> http://localhost:8000
+#   dashboard    -> http://localhost:3000
+#   driver-app   -> http://localhost:3001
+#   db (postgis) -> localhost:5432
+#   redis        -> localhost:6379
+#
+# db and redis run today. backend / dashboard / driver-app expect a Dockerfile
+# in their own folder — each owner adds theirs, then that service comes up.
+
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: ner-db
+    environment:
+      POSTGRES_USER: ner
+      POSTGRES_PASSWORD: ner
+      POSTGRES_DB: ner
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ner -d ner"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: ner-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: ner-backend
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://ner:ner@db:5432/ner
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - ./backend:/app
+      - ./mock-data:/app/mock-data:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  dashboard:
+    build: ./dashboard
+    container_name: ner-dashboard
+    ports:
+      - "3000:3000"
+    environment:
+      VITE_API_URL: /mock-data
+    volumes:
+      - ./dashboard:/app
+      - ./mock-data:/app/public/mock-data:ro
+      - /app/node_modules
+
+  driver-app:
+    build: ./driver-app
+    container_name: ner-driver-app
+    ports:
+      - "3001:3001"
+    environment:
+      VITE_API_URL: /mock-data
+    volumes:
+      - ./driver-app:/app
+      - ./mock-data:/app/public/mock-data:ro
+      - /app/node_modules
+
+volumes:
+  db-data:
+  redis-data:

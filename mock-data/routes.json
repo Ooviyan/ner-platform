@@ -1,0 +1,42 @@
+[
+  {
+    "id": "RTE-1001",
+    "origin": "Siliguri, West Bengal",
+    "destination": "Gangtok, Sikkim",
+    "chosen": true,
+    "eta_min": 214,
+    "delay_min": 46,
+    "risk": 0.68,
+    "segments": ["SEG-SK-NH10-001", "SEG-SK-NH10-002"]
+  },
+  {
+    "id": "RTE-1002",
+    "origin": "Siliguri, West Bengal",
+    "destination": "Gangtok, Sikkim",
+    "chosen": false,
+    "eta_min": 268,
+    "delay_min": 12,
+    "risk": 0.31,
+    "segments": ["SEG-SK-NH10-002"]
+  },
+  {
+    "id": "RTE-2007",
+    "origin": "Guwahati, Assam",
+    "destination": "Tezpur, Assam",
+    "chosen": true,
+    "eta_min": 178,
+    "delay_min": 25,
+    "risk": 0.42,
+    "segments": ["SEG-AS-NH27-014", "SEG-AS-NH715-007"]
+  },
+  {
+    "id": "RTE-2008",
+    "origin": "Guwahati, Assam",
+    "destination": "Shillong, Meghalaya",
+    "chosen": false,
+    "eta_min": 149,
+    "delay_min": 0,
+    "risk": 0.22,
+    "segments": ["SEG-AS-NH27-014"]
+  }
+]
