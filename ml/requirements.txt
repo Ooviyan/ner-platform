@@ -1,0 +1,9 @@
+# Person 2 - AI/ML & Routing. Python 3.11+
+scikit-learn>=1.5
+xgboost>=2.1
+pandas>=2.2
+numpy>=1.26
+networkx>=3.3
+shap>=0.46
+joblib>=1.4
+jupyter>=1.1

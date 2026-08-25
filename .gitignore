@@ -22,6 +22,9 @@ build/
 ml/models/
 *.pkl
 *.joblib
+# ...but the trained risk model IS a deliverable - Person 1 imports it.
+!ml/risk_model.pkl
+ml/data/training_data.csv
 
 # os / editor
 .DS_Store

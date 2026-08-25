@@ -1,0 +1,219 @@
+{
+  "type": "FeatureCollection",
+  "name": "NH-10 Rangpo to Gangtok, with the Rorathang-Pakyong alternate",
+  "note": "ML-local test fixture, owned by ml/. Two real routes into Gangtok: NH-10 along the Teesta (fast, landslide-prone) and the Rorathang-Pakyong state highway (slower, safer) - the road Sikkim actually falls back on when NH-10 closes. Gives the router a genuine choice to make. Not part of the shared mock-data contract.",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "NH10-RNG-SGT",
+        "name": "NH-10 Rangpo - Singtam (Teesta gorge)",
+        "from": "RANGPO",
+        "to": "SINGTAM",
+        "status": "open",
+        "road_class": 3,
+        "slope_deg": 31.0,
+        "elevation_m": 460.0,
+        "incident_density": 4.1,
+        "speed_kmph": 45
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            88.529,
+            27.176
+          ],
+          [
+            88.5142,
+            27.1935
+          ],
+          [
+            88.5031,
+            27.2148
+          ],
+          [
+            88.498,
+            27.234
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "NH10-SGT-RNP",
+        "name": "NH-10 Singtam - Ranipool",
+        "from": "SINGTAM",
+        "to": "RANIPOOL",
+        "status": "open",
+        "road_class": 3,
+        "slope_deg": 22.0,
+        "elevation_m": 980.0,
+        "incident_density": 1.7,
+        "speed_kmph": 40
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            88.498,
+            27.234
+          ],
+          [
+            88.5416,
+            27.251
+          ],
+          [
+            88.568,
+            27.262
+          ],
+          [
+            88.586,
+            27.268
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "NH10-RNP-GTK",
+        "name": "NH-10 Ranipool - Gangtok",
+        "from": "RANIPOOL",
+        "to": "GANGTOK",
+        "status": "open",
+        "road_class": 3,
+        "slope_deg": 18.0,
+        "elevation_m": 1420.0,
+        "incident_density": 0.9,
+        "speed_kmph": 35
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            88.586,
+            27.268
+          ],
+          [
+            88.596,
+            27.294
+          ],
+          [
+            88.608,
+            27.316
+          ],
+          [
+            88.6138,
+            27.3314
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "SH-RNG-RRT",
+        "name": "Rangpo - Rorathang (state highway)",
+        "from": "RANGPO",
+        "to": "RORATHANG",
+        "status": "open",
+        "road_class": 2,
+        "slope_deg": 16.0,
+        "elevation_m": 620.0,
+        "incident_density": 0.8,
+        "speed_kmph": 26
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            88.529,
+            27.176
+          ],
+          [
+            88.552,
+            27.164
+          ],
+          [
+            88.58,
+            27.16
+          ],
+          [
+            88.605,
+            27.17
+          ],
+          [
+            88.615,
+            27.19
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "SH-RRT-PKY",
+        "name": "Rorathang - Pakyong",
+        "from": "RORATHANG",
+        "to": "PAKYONG",
+        "status": "open",
+        "road_class": 2,
+        "slope_deg": 19.0,
+        "elevation_m": 1150.0,
+        "incident_density": 0.6,
+        "speed_kmph": 26
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            88.615,
+            27.19
+          ],
+          [
+            88.622,
+            27.21
+          ],
+          [
+            88.61,
+            27.23
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "SH-PKY-RNP",
+        "name": "Pakyong - Ranipool",
+        "from": "PAKYONG",
+        "to": "RANIPOOL",
+        "status": "open",
+        "road_class": 2,
+        "slope_deg": 17.0,
+        "elevation_m": 1300.0,
+        "incident_density": 0.5,
+        "speed_kmph": 26
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            88.61,
+            27.23
+          ],
+          [
+            88.605,
+            27.25
+          ],
+          [
+            88.586,
+            27.268
+          ]
+        ]
+      }
+    }
+  ]
+}

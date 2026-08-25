@@ -1,0 +1,34 @@
+{
+  "model_version": "0.1.0",
+  "trained_at": "2026-08-25T07:56:18+00:00",
+  "n_train": 4500,
+  "n_test": 1500,
+  "base_rate": 0.173,
+  "accuracy": 0.8913,
+  "precision": 0.7437,
+  "recall": 0.5692,
+  "f1": 0.6449,
+  "roc_auc": 0.894,
+  "pr_auc": 0.7209,
+  "brier": 0.0832,
+  "confusion_matrix": [
+    [
+      1189,
+      51
+    ],
+    [
+      112,
+      148
+    ]
+  ],
+  "data_source": "synthetic (make_dataset.py) - NOT field-validated",
+  "mean_abs_shap": {
+    "rain_3day_mm": 1.3962,
+    "slope_deg": 0.8998,
+    "incident_density": 0.5169,
+    "road_class": 0.449,
+    "elevation_m": 0.4044,
+    "rain_now_mm": 0.2535,
+    "report_signal": 0.1635
+  }
+}
