@@ -1,0 +1,23 @@
+[
+  {
+    "vehicle_id": "SK-01-J-4471",
+    "cargo": "Medicines",
+    "route_id": "RTE-1001",
+    "progress": 0.15,
+    "status": "en_route"
+  },
+  {
+    "vehicle_id": "SK-04-B-1120",
+    "cargo": "Construction materials",
+    "route_id": "RTE-1002",
+    "progress": 0.60,
+    "status": "en_route"
+  },
+  {
+    "vehicle_id": "AS-01-CC-7783",
+    "cargo": "Food supplies",
+    "route_id": "RTE-2007",
+    "progress": 0.40,
+    "status": "en_route"
+  }
+]
