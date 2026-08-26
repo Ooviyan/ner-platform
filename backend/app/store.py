@@ -20,7 +20,7 @@ from sqlalchemy import cast, func, select
 from sqlalchemy.orm import Session
 
 from app import geo, seed
-from app.models import Alert, Incident, RoadSegment, Route, Vehicle
+from app.models import Alert, Incident, LocationPing, RoadSegment, Route, Vehicle
 from app.ner_states import NER_STATES, normalize_state
 
 _lock = threading.Lock()
@@ -661,3 +661,166 @@ def summary(db: Optional[Session]) -> dict:
         "open_reports": len(list_reports(db, status="pending")),
         "by_state": by_state,
     }
+
+
+# ------------------------------------------------- driver-PWA compatibility ---
+# The /api/* routes serve the driver app's own dialect. Everything below
+# translates between it and the ../mock-data contract; nothing here changes what
+# the canonical endpoints return.
+
+def _split_place(label: Optional[str]) -> tuple:
+    """'Siliguri, West Bengal' -> ('Siliguri', 'West Bengal')."""
+    if not label:
+        return None, None
+    parts = [p.strip() for p in label.split(",", 1)]
+    return parts[0], (parts[1] if len(parts) > 1 else None)
+
+
+def resolve_vehicle(db: Optional[Session], vehicle_id: Optional[str]) -> Optional[dict]:
+    """Find a vehicle, falling back sensibly when the id is unknown.
+
+    The driver app ships a demo default registration that need not exist in our
+    fleet, so an unknown id resolves to a vehicle on a chosen route rather than
+    404ing the Home screen. The response always names the vehicle it settled on.
+    """
+    fleet = list_vehicles(db)
+    if not fleet:
+        return None
+    if vehicle_id:
+        exact = next((v for v in fleet if v["vehicle_id"] == vehicle_id), None)
+        if exact:
+            return exact
+    routes = {r["id"]: r for r in list_routes(db)}
+    on_chosen = [v for v in fleet if routes.get(v.get("route_id"), {}).get("chosen")]
+    return (on_chosen or fleet)[0]
+
+
+def driver_route(db: Optional[Session], vehicle_id: Optional[str] = None) -> Optional[dict]:
+    """The assigned route for a vehicle, in the driver app's nested shape."""
+    vehicle = resolve_vehicle(db, vehicle_id)
+    if vehicle is None:
+        return None
+    route = get_route(db, vehicle.get("route_id")) if vehicle.get("route_id") else None
+    if route is None:
+        candidates = list_routes(db)
+        route = next((r for r in candidates if r["chosen"]), candidates[0] if candidates else None)
+    if route is None:
+        return None
+
+    origin_name, origin_state = _split_place(route["origin"])
+    dest_name, dest_state = _split_place(route["destination"])
+    speeds = _SPEED_BY_BAND
+
+    segments = []
+    for sid in route["segments"]:
+        seg = get_segment(db, sid)
+        if not seg:
+            continue
+        eta = seg["length_km"] / speeds[seg["risk_band"]] * 60
+        segments.append({
+            "id": seg["id"],
+            "name": seg["name"],
+            "distance_km": round(seg["length_km"], 1),
+            "eta_min": round(eta),
+            "risk": seg["risk"],
+            "status": seed_driver_status(seg["status"], seg["risk"]),
+            # Leaflet wants [lat, lng]; our geometry is GeoJSON [lng, lat].
+            "path": [[round(lat, 6), round(lng, 6)]
+                     for lng, lat in seg["geometry"]["coordinates"]],
+        })
+
+    alternatives = [
+        {
+            "id": alt["id"], "chosen": alt["chosen"], "eta_min": alt["eta_min"],
+            "delay_min": alt["delay_min"], "risk": alt["risk"],
+            "label": f"via {_split_place(alt['destination'])[0]}"
+                     if alt["destination"] != route["destination"]
+                     else f"Alternative {alt['id']}",
+        }
+        for alt in list_routes(db)
+        if alt["id"] != route["id"] and alt["origin"] == route["origin"]
+    ][:3]
+
+    return {
+        "id": route["id"],
+        "origin": {"name": origin_name, "state": origin_state,
+                   "lat": route["origin_point"]["lat"], "lng": route["origin_point"]["lng"]},
+        "destination": {"name": dest_name, "state": dest_state,
+                        "lat": route["destination_point"]["lat"],
+                        "lng": route["destination_point"]["lng"]},
+        "chosen": route["chosen"],
+        "eta_min": route["eta_min"],
+        "delay_min": route["delay_min"],
+        "risk": route["risk"],
+        "vehicle": {
+            "vehicle_id": vehicle["vehicle_id"],
+            "driver_name": vehicle.get("operator"),
+            "type": vehicle.get("type"),
+            "cargo": vehicle.get("cargo"),
+            "cargo_weight_kg": None,
+        },
+        "segments": segments,
+        "alternatives": alternatives,
+    }
+
+
+def seed_driver_status(status: str, risk: float) -> str:
+    if status == "closed":
+        return "blocked"
+    if risk >= 0.6:
+        return "high_risk"
+    if risk >= 0.3:
+        return "caution"
+    return "clear"
+
+
+# In-memory ping log, used when PostGIS is not connected.
+_MEMORY_PINGS: List[dict] = []
+
+
+def create_location_ping(db: Optional[Session], payload: dict) -> dict:
+    """Record one SOS position fix."""
+    at = payload.get("at") or _iso(_now())
+    lat, lng = payload.get("lat"), payload.get("lng")
+    received = _iso(_now())
+
+    if db is not None:
+        row = LocationPing(
+            alert_id=payload.get("alert_id"), vehicle_id=payload.get("vehicle_id"),
+            node=payload.get("node"), lat=lat, lng=lng,
+            accuracy_m=payload.get("accuracy"), at=_dt(at), received_at=_now(),
+            geom=WKTElement(geo.to_wkt_point((lng, lat)))
+            if lat is not None and lng is not None else None,
+        )
+        db.add(row)
+        db.commit()
+        db.refresh(row)
+        ping_id = row.id
+    else:
+        with _lock:
+            ping_id = len(_MEMORY_PINGS) + 1
+            _MEMORY_PINGS.append({"id": ping_id, **payload, "received_at": received})
+
+    return {
+        "id": ping_id, "alert_id": payload.get("alert_id"),
+        "vehicle_id": payload.get("vehicle_id"), "node": payload.get("node"),
+        "lat": lat, "lng": lng, "accuracy": payload.get("accuracy"),
+        "at": at, "received_at": received,
+    }
+
+
+def list_location_pings(
+    db: Optional[Session], alert_id: Optional[str] = None, limit: int = 200
+) -> List[dict]:
+    if db is not None:
+        stmt = select(LocationPing).order_by(LocationPing.at.desc()).limit(limit)
+        if alert_id:
+            stmt = stmt.where(LocationPing.alert_id == alert_id)
+        return [{
+            "id": r.id, "alert_id": r.alert_id, "vehicle_id": r.vehicle_id,
+            "node": r.node, "lat": r.lat, "lng": r.lng, "accuracy": r.accuracy_m,
+            "at": _iso(r.at), "received_at": _iso(r.received_at),
+        } for r in db.execute(stmt).scalars()]
+
+    rows = [p for p in _MEMORY_PINGS if not alert_id or p.get("alert_id") == alert_id]
+    return deepcopy(rows[-limit:][::-1])

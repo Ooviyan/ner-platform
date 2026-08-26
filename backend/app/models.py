@@ -192,3 +192,28 @@ class Alert(Base):
 
 
 Index("ix_alerts_geom", Alert.geom, postgresql_using="gist")
+
+
+class LocationPing(Base):
+    """A position fix streamed while an SOS is active.
+
+    The driver PWA pings every 15s for the life of an alert, and buffers them
+    while offline, so the control room can follow a vehicle in trouble even
+    across signal gaps. Written by POST /api/alerts/location.
+    """
+
+    __tablename__ = "location_pings"
+
+    id = mapped_column(Integer, primary_key=True, autoincrement=True)
+    alert_id = mapped_column(String(64), index=True)
+    vehicle_id = mapped_column(String(64), index=True)
+    node = mapped_column(String(8))
+    lat = mapped_column(Float, nullable=True)
+    lng = mapped_column(Float, nullable=True)
+    accuracy_m = mapped_column(Float, nullable=True)
+    at = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+    received_at = mapped_column(DateTime(timezone=True), default=utcnow)
+    geom = mapped_column(Geometry("POINT", srid=4326), nullable=True)
+
+
+Index("ix_location_pings_geom", LocationPing.geom, postgresql_using="gist")
