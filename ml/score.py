@@ -21,12 +21,34 @@ from features import segment_features
 from risk import score_segment
 
 # How much each factor can pull the score down, out of 100.
+#
+# These are the entire definition of the score. They are module-level so they can
+# be read and audited in one place, and `accessibility(..., weights=...)` takes an
+# override so a caller can re-weight per vehicle class -- an ambulance cares more
+# about surface than a loaded truck does -- without mutating global state.
 WEIGHTS: dict[str, float] = {
     "disruption_risk": 45.0,   # predicted 48h failure probability
     "terrain":         15.0,   # steepness the vehicle has to negotiate
     "history":         15.0,   # how often this segment has failed before
     "surface":         25.0,   # road class / condition
 }
+
+
+def resolve_weights(weights: Mapping[str, float] | None = None) -> dict[str, float]:
+    """Merge an override over the defaults, rejecting unknown keys.
+
+    A typo in a weight name would otherwise silently score every road in the
+    region wrong, which is exactly the kind of bug nobody notices in a demo.
+    """
+    if not weights:
+        return dict(WEIGHTS)
+    unknown = set(weights) - set(WEIGHTS)
+    if unknown:
+        raise ValueError(
+            f"unknown weight(s): {sorted(unknown)}; expected {sorted(WEIGHTS)}")
+    merged = dict(WEIGHTS)
+    merged.update({k: float(v) for k, v in weights.items()})
+    return merged
 
 # Status is not a penalty, it is a ceiling. A closed road is not "somewhat
 # accessible" no matter how good its slope and surface are.
@@ -56,17 +78,19 @@ def _surface_penalty(road_class: float) -> float:
 
 
 def breakdown(segment: Mapping[str, Any], weather: Mapping[str, Any] | None = None,
-              risk: float | None = None, report_signal: float = 0.0) -> dict[str, Any]:
+              risk: float | None = None, report_signal: float = 0.0,
+              weights: Mapping[str, float] | None = None) -> dict[str, Any]:
     """Full working for one segment: every deduction and the ceiling applied."""
     features = segment_features(segment, weather, report_signal)
     if risk is None:
         risk = score_segment(features)
 
+    w = resolve_weights(weights)
     penalties = {
-        "disruption_risk": WEIGHTS["disruption_risk"] * risk,
-        "terrain": WEIGHTS["terrain"] * _terrain_penalty(features["slope_deg"]),
-        "history": WEIGHTS["history"] * _history_penalty(features["incident_density"]),
-        "surface": WEIGHTS["surface"] * _surface_penalty(features["road_class"]),
+        "disruption_risk": w["disruption_risk"] * risk,
+        "terrain": w["terrain"] * _terrain_penalty(features["slope_deg"]),
+        "history": w["history"] * _history_penalty(features["incident_density"]),
+        "surface": w["surface"] * _surface_penalty(features["road_class"]),
     }
     raw = 100.0 - sum(penalties.values())
 
@@ -83,14 +107,19 @@ def breakdown(segment: Mapping[str, Any], weather: Mapping[str, Any] | None = No
         "ceiling_applied": raw > ceiling,
         "raw_score": round(raw, 2),
         "penalties": {k: round(v, 2) for k, v in penalties.items()},
+        "weights": w,
         "features": features,
     }
 
 
 def accessibility(segment: Mapping[str, Any], weather: Mapping[str, Any] | None = None,
-                  risk: float | None = None, report_signal: float = 0.0) -> int:
-    """Road usability, 0 (impassable) to 100 (fully usable)."""
-    return breakdown(segment, weather, risk, report_signal)["accessibility"]
+                  risk: float | None = None, report_signal: float = 0.0,
+                  weights: Mapping[str, float] | None = None) -> int:
+    """Road usability, 0 (impassable) to 100 (fully usable).
+
+    `weights` re-weights the penalties for this call only; see resolve_weights.
+    """
+    return breakdown(segment, weather, risk, report_signal, weights)["accessibility"]
 
 
 def band(score: float) -> str:

@@ -1,7 +1,7 @@
 """Feature schema for the disruption-risk model.
 
 This module is the single definition of what the model eats and in what order.
-`risk.py`, `train.py` and the notebook all import from here so the training
+`risk.py`, `train_risk.py` and the notebook all import from here so the training
 matrix and the inference call can never drift apart.
 
 Feature set follows the risk-model schema in the project study: the domain edge
@@ -65,9 +65,30 @@ TERRAIN: dict[str, dict[str, float]] = {
 }
 
 
-def clamp(name: str, value: float) -> float:
+def coerce(name: str, value: Any) -> float:
+    """Turn a contract value into the number the model expects.
+
+    `/segments` carries `road_class` as a string ("national_highway"), and
+    `surface` likewise, because that is what the shared contract agreed. The
+    model is fed a positional float matrix. Coercing here means Person 1 can pass
+    a raw `/segments` row to any function in this folder without translating it
+    first -- which is exactly what the README tells them to do.
+    """
+    if isinstance(value, str):
+        text = value.strip().lower()
+        if name == "road_class":
+            if text not in ROAD_CLASS:
+                raise ValueError(
+                    f"unknown road_class {value!r}; expected one of "
+                    f"{sorted(ROAD_CLASS)} or a number 0-3")
+            return float(ROAD_CLASS[text])
+        return float(text)
+    return float(value)
+
+
+def clamp(name: str, value: Any) -> float:
     lo, hi = BOUNDS[name]
-    return max(lo, min(hi, float(value)))
+    return max(lo, min(hi, coerce(name, value)))
 
 
 def to_row(features: Mapping[str, Any]) -> list[float]:
@@ -95,7 +116,7 @@ def segment_features(segment: Mapping[str, Any], weather: Mapping[str, Any] | No
     def pick(name: str) -> float:
         for source in (segment, terrain):
             if name in source and source[name] is not None:
-                return float(source[name])
+                return coerce(name, source[name])
         return DEFAULTS[name]
 
     return {

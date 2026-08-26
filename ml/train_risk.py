@@ -1,7 +1,7 @@
 """Train the disruption-risk model and write risk_model.pkl.
 
-    python train.py              # generate data if missing, train, evaluate, save
-    python train.py --rows 20000 # bigger synthetic sample
+    python train_risk.py              # generate data if missing, train, evaluate, save
+    python train_risk.py --rows 20000 # bigger synthetic sample
 
 Saves a payload rather than a bare model so `risk.py` can verify at load time
 that the feature order it is about to send matches the order used in training.
