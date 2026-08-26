@@ -34,9 +34,15 @@ def _find_mock_dir() -> Path:
 
 MOCK_DIR = _find_mock_dir()
 
-# file, API path, key field
+# file, API path, key field.
+#
+# /segments is queried with scored=false. With scoring on, `risk` and
+# `accessibility` are what the ML layer computes -- they SHOULD differ from the
+# fixture, and freezing them would mean the model could never change a score.
+# What this script proves is that the API can still produce exactly the agreed
+# contract, field for field, which is the guarantee the frontends actually need.
 CHECKS = [
-    ("segments.json", "/segments", "id"),
+    ("segments.json", "/segments?scored=false", "id"),
     ("routes.json", "/routes", "id"),
     ("vehicles.json", "/vehicles", "vehicle_id"),
     ("reports.json", "/reports", "event_id"),
@@ -49,7 +55,8 @@ LIVE_FIELDS = {"progress", "status"}
 
 def _from_api(url: str, path: str) -> list:
     # 1000 is the lowest per-endpoint cap; asking for more is a 422.
-    with urllib.request.urlopen(f"{url}{path}?limit=1000", timeout=15) as response:
+    joiner = "&" if "?" in path else "?"
+    with urllib.request.urlopen(f"{url}{path}{joiner}limit=1000", timeout=15) as response:
         if response.status != 200:
             raise SystemExit(f"{path} returned HTTP {response.status}")
         payload = json.load(response)
@@ -61,6 +68,7 @@ def _from_api(url: str, path: str) -> list:
 def _from_seed(path: str) -> list:
     from app import seed
     return {
+        "/segments?scored=false": seed.SEGMENTS,
         "/segments": seed.SEGMENTS, "/routes": seed.ROUTES,
         "/vehicles": seed.VEHICLES, "/reports": seed.REPORTS,
         "/alerts": seed.ALERTS,

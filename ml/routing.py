@@ -53,6 +53,22 @@ CORRIDOR = HERE / "data" / "corridor_nh10.geojson"
 # should fear a blockage far more than a cargo truck.
 DISRUPTION_COST_MIN = 240.0  # 4h: waiting out a clearance, or turning back
 
+# Risk is priced per kilometre of exposure, against this reference length.
+#
+# The earlier version charged `risk * DISRUPTION_COST_MIN` per EDGE, which made
+# the cost depend on how finely the network happens to be chopped up: a road
+# split into five rows was penalised five times, the same road as one row once.
+# On the Sikkim network that inverted the answer outright -- in heavy rain the
+# router sent trucks INTO the Teesta gorge (3 edges, one of them 0.86 risk over
+# 7 km) rather than round the Rorathang bypass (5 edges, none above 0.54),
+# purely because the bypass had more rows.
+#
+# Scaling by length fixes it and is what the quantity means anyway: the chance
+# this drive is disrupted grows with how much dangerous road you are on, not
+# with how many rows the surveyor drew. It is also split-invariant -- one 20 km
+# edge at risk r costs exactly what two 10 km edges at risk r cost.
+RISK_REFERENCE_KM = 10.0
+
 # Below this accessibility a segment is treated as impassable and dropped from
 # the graph entirely, rather than merely made expensive.
 IMPASSABLE_BELOW = 15
@@ -145,7 +161,10 @@ def build_graph(segments: Iterable[Mapping[str, Any]],
         # Poor usability slows a vehicle down even where the road is open.
         effective_speed = max(speed * (0.4 + 0.6 * usability / 100.0), 8.0)
         travel_min = length_km / effective_speed * 60.0
-        cost = travel_min + risk * disruption_cost_min
+        # Expected delay from disruption, proportional to exposure. See
+        # RISK_REFERENCE_KM for why this is per-km and not per-edge.
+        exposure = max(length_km, 0.1) / RISK_REFERENCE_KM
+        cost = travel_min + risk * disruption_cost_min * exposure
 
         start = _node_id(segment, coordinates[0], "from")
         end = _node_id(segment, coordinates[-1], "to")

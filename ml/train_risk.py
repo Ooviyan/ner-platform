@@ -117,6 +117,7 @@ def main() -> None:
                                                    key=lambda kv: -kv[1])}
 
     joblib.dump({"model": model, "features": FEATURES,
+                 "xgboost_version": xgb.__version__,
                  "model_version": MODEL_VERSION,
                  "trained_at": metrics["trained_at"],
                  "metrics": {k: metrics[k] for k in

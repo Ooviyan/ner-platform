@@ -18,6 +18,19 @@ shapely==2.0.6
 networkx==3.4.2
 requests==2.32.3
 
+# --- intelligence layer (ml/) ------------------------------------------
+# The API imports Person 2's models for risk scoring and safest-path routing.
+# All optional: app/intelligence.py degrades to stored values if they are absent,
+# so the platform still runs without them. xgboost needs libgomp at runtime --
+# see the Dockerfile (libgomp1) and, on macOS, `brew install libomp`.
+xgboost==3.4.1   # MUST match ml/requirements.txt - see risk.py _load()
+scikit-learn==1.5.2
+networkx==3.4.2
+joblib==1.4.2
+numpy==2.1.3
+pandas==2.2.3
+certifi==2024.12.14
+
 # --- tests -------------------------------------------------------------
 httpx==0.28.1
 pytest==8.3.4

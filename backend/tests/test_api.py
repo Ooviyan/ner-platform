@@ -33,8 +33,17 @@ CONTRACT = [
     ("reports.json", "/reports", "event_id"),
     ("alerts.json", "/alerts", "id"),
 ]
-# The simulator moves these between the seed and the first request.
-LIVE = {"/vehicles": {"progress", "status"}}
+# Fields whose VALUE is expected to move between the fixture and a live call.
+# The contract still fixes their name, type and range -- checked separately.
+#
+#   /vehicles  the simulator moves the fleet between the seed and the request.
+#   /segments  risk and accessibility are what the ML layer exists to compute.
+#              mock-data carries example values, not frozen truth; freezing them
+#              would mean the model could never change a score, which defeats it.
+LIVE = {
+    "/vehicles": {"progress", "status"},
+    "/segments": {"risk", "accessibility"},
+}
 
 
 @pytest.mark.skipif(not MOCK_DIR.exists(), reason="mock-data not present")
@@ -83,6 +92,25 @@ def test_segments_cover_all_eight_states(client):
 def test_segments_are_sorted_by_risk_descending(client):
     risks = [r["risk"] for r in client.get("/segments").json()]
     assert risks == sorted(risks, reverse=True)
+
+
+def test_scored_segments_keep_the_contract_types(client):
+    """The model may change risk and accessibility; it may not change their shape."""
+    for row in client.get("/segments", params={"scored": "true"}).json():
+        assert isinstance(row["risk"], (int, float)) and 0.0 <= row["risk"] <= 1.0
+        assert isinstance(row["accessibility"], int) and 0 <= row["accessibility"] <= 100
+        assert row["status"] in {"open", "restricted", "closed"}
+
+
+def test_scored_false_returns_the_stored_contract_values(client):
+    """An escape hatch back to exactly what mock-data says."""
+    import json as _json
+    contract = {r["id"]: r for r in
+                _json.loads((MOCK_DIR / "segments.json").read_text())}
+    for row in client.get("/segments", params={"scored": "false", "limit": 1000}).json():
+        if row["id"] in contract:
+            assert row["risk"] == contract[row["id"]]["risk"]
+            assert row["accessibility"] == contract[row["id"]]["accessibility"]
 
 
 @pytest.mark.parametrize("state", ["Sikkim", "sikkim", "SK"])

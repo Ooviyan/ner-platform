@@ -1,6 +1,6 @@
 {
   "model_version": "0.1.0",
-  "trained_at": "2026-08-26T10:06:17+00:00",
+  "trained_at": "2026-08-26T11:25:40+00:00",
   "n_train": 4500,
   "n_test": 1500,
   "base_rate": 0.173,
