@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1" />
+    <meta name="theme-color" content="#0b3d3b" />
+    <meta name="description" content="NER Driver — safest route, SOS and offline road reporting for essential-goods vehicles in India's North Eastern Region." />
+    <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>NER Driver</title>
+    <script>
+      /*
+       * Boot guard — must stay INLINE in index.html.
+       *
+       * If a service worker serves a cached index.html whose hashed bundle no
+       * longer exists, the entry chunk 404s and the driver gets a blank white
+       * screen. Recovery code inside that bundle can never run, so it lives
+       * here instead: this script is cached together with the HTML and always
+       * executes. It tears down the service worker and caches, then reloads
+       * once. IndexedDB is untouched — unsent reports and an active SOS survive.
+       */
+      (function () {
+        var FLAG = 'ner.boot.recovery'
+        function reset(reason) {
+          try {
+            if (sessionStorage.getItem(FLAG) === '1') return
+            sessionStorage.setItem(FLAG, '1')
+          } catch (e) {}
+          console.warn('[boot] recovering from:', reason)
+          var jobs = []
+          if (navigator.serviceWorker) {
+            jobs.push(
+              navigator.serviceWorker.getRegistrations().then(function (rs) {
+                return Promise.all(rs.map(function (r) { return r.unregister() }))
+              })
+            )
+          }
+          if (window.caches) {
+            jobs.push(
+              caches.keys().then(function (ks) {
+                return Promise.all(ks.map(function (k) { return caches.delete(k) }))
+              })
+            )
+          }
+          Promise.all(jobs)
+            .catch(function () {})
+            .then(function () { location.reload() })
+        }
+        window.__nerBootOk = function () {
+          try { sessionStorage.removeItem(FLAG) } catch (e) {}
+        }
+        window.addEventListener(
+          'error',
+          function (e) {
+            var el = e.target
+            if (!el || (el.tagName !== 'SCRIPT' && el.tagName !== 'LINK')) return
+            var url = el.src || el.href || ''
+            if (url.indexOf('/assets/') > -1) reset('asset failed to load: ' + url)
+          },
+          true
+        )
+        // Catch-all: whatever the cause, an app that never mounts is broken.
+        setTimeout(function () {
+          var root = document.getElementById('root')
+          if (root && root.children.length === 0) reset('app did not mount within 8s')
+        }, 8000)
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
