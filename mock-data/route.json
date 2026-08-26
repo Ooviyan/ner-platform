@@ -1,0 +1,98 @@
+{
+  "id": "RTE-1001",
+  "origin": {
+    "name": "Siliguri",
+    "state": "West Bengal",
+    "lat": 27.176,
+    "lng": 88.529
+  },
+  "destination": {
+    "name": "Gangtok",
+    "state": "Sikkim",
+    "lat": 27.3314,
+    "lng": 88.6138
+  },
+  "chosen": true,
+  "eta_min": 214,
+  "delay_min": 46,
+  "risk": 0.68,
+  "vehicle": {
+    "vehicle_id": "SK-01-J-4471",
+    "driver_name": "Sikkim Health Services",
+    "type": "ambulance",
+    "cargo": "Medicines",
+    "cargo_weight_kg": null
+  },
+  "segments": [
+    {
+      "id": "SEG-SK-NH10-001",
+      "name": "NH-10 Rangpo - Singtam (Teesta Corridor, Sikkim)",
+      "distance_km": 7.2,
+      "eta_min": 24,
+      "risk": 0.82,
+      "status": "high_risk",
+      "path": [
+        [
+          27.176,
+          88.529
+        ],
+        [
+          27.1935,
+          88.5142
+        ],
+        [
+          27.2148,
+          88.5031
+        ],
+        [
+          27.234,
+          88.498
+        ]
+      ]
+    },
+    {
+      "id": "SEG-SK-NH10-002",
+      "name": "NH-10 Singtam - Ranipool - Gangtok (Sikkim)",
+      "distance_km": 15.8,
+      "eta_min": 23,
+      "risk": 0.47,
+      "status": "caution",
+      "path": [
+        [
+          27.234,
+          88.498
+        ],
+        [
+          27.2701,
+          88.5416
+        ],
+        [
+          27.3062,
+          88.5877
+        ],
+        [
+          27.3314,
+          88.6138
+        ]
+      ]
+    }
+  ],
+  "alternatives": [
+    {
+      "id": "RTE-1002",
+      "chosen": false,
+      "eta_min": 268,
+      "delay_min": 12,
+      "risk": 0.31,
+      "label": "Alternative RTE-1002"
+    },
+    {
+      "id": "RTE-1003",
+      "chosen": false,
+      "eta_min": 402,
+      "delay_min": 88,
+      "risk": 0.71,
+      "label": "via Nathu La"
+    }
+  ]
+}
