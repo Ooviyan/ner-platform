@@ -66,7 +66,7 @@ export default function Sos() {
   if (active) {
     const started = new Date(active.started_at)
     return (
-      <main className="screen">
+      <main className="screen sos-screen">
         <section
           className="card"
           style={{
@@ -152,7 +152,7 @@ export default function Sos() {
 
   /* ------------------------------------------------------------ idle view */
   return (
-    <main className="screen">
+    <main className="screen sos-screen">
       <section className="card">
         <h2>{t('sos.title')}</h2>
         <p className="small muted" style={{ margin: '0 0 12px' }}>
@@ -184,8 +184,10 @@ export default function Sos() {
       </section>
 
       <button
-        className="btn danger"
+        className="btn danger sos-btn"
         style={{
+          // .sos-btn overrides this on wide screens, where the button should
+          // own the column rather than sit at a phone-sized 190px.
           height: 190,
           borderRadius: 22,
           fontSize: 19,

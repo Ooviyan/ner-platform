@@ -387,6 +387,64 @@ hr.sep { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
 
   /* Bigger hit areas: gloves, and a cab that moves. */
   .btn { min-height: 50px; font-size: 15px; }
+
+  /* ---- Report: pick-and-shoot on the left, describe-and-send on the right --
+     The single column made the driver scroll past the photo controls to reach
+     Submit. Split, both halves are visible at once and the button is never
+     below the fold. */
+  .report-screen,
+  .sos-screen,
+  .mesh-screen,
+  .settings-screen {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    justify-content: stretch;
+    align-items: start;
+  }
+  .report-screen > .card:first-of-type { grid-column: 1; }
+  .report-screen > .report-detail { grid-column: 2; }
+  .report-screen > .card:last-of-type:not(.report-detail) { grid-column: 2; }
+
+  /* ---- SOS: the button is the screen ------------------------------------
+     Emergency type and the hold target take the left column at full height;
+     history sits out of the way on the right. Nobody scrolls during an
+     emergency. */
+  .sos-screen > .card:first-of-type { grid-column: 1; }
+  /* An alert already in flight keeps the single-column layout: the driver is
+     mid-emergency and the screen should not rearrange under them. */
+  .sos-screen:not(:has(.sos-btn)) { grid-template-columns: minmax(0, 680px); justify-content: center; }
+  .sos-screen:not(:has(.sos-btn)) > .card { grid-column: 1 !important; }
+  .sos-screen > .sos-btn {
+    grid-column: 1;
+    /* !important: the component sets height inline for the phone layout. */
+    height: clamp(190px, 34vh, 320px) !important;
+  }
+  .sos-screen > .card:last-of-type { grid-column: 2; grid-row: 1 / span 2; }
+
+  /* ---- Mesh: state left, explanation right ------------------------------
+     The demo explainer is the least urgent thing on the screen, so it stops
+     being the first thing between the driver and their own node status. */
+  .mesh-screen > .card:nth-of-type(1) { grid-column: 2; grid-row: 1; }
+  .mesh-screen > .card:nth-of-type(2) { grid-column: 1; grid-row: 1; }
+  .mesh-screen > .card:nth-of-type(3) { grid-column: 1; grid-row: 2; }
+  .mesh-screen > .card:nth-of-type(4) { grid-column: 2; grid-row: 2; }
+
+  /* ---- Settings: two columns, language across both ----------------------
+     Order matters: the odd/even rules come first so the span below wins on
+     card 1 without needing !important -- both selectors have the same
+     specificity, so the later one takes it. */
+  /* dense: without it each card claims its own row, so pinning cards to a
+     column leaves holes down the other one. */
+  .settings-screen { grid-auto-flow: row dense; }
+  .settings-screen > .card:nth-of-type(even) { grid-column: 2; }
+  .settings-screen > .card:nth-of-type(odd) { grid-column: 1; }
+  .settings-screen > .card:nth-of-type(1) { grid-column: 1 / -1; }
+
+  /* Five languages in a row of cards wasted a whole screen. */
+  .settings-screen .lang-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 8px;
+  }
 }
 
 /* Genuinely short screens only (dash tablets, ~600px): every vertical pixel is

@@ -143,7 +143,7 @@ export default function Report() {
   }
 
   return (
-    <main className="screen">
+    <main className="screen report-screen">
       <section className="card">
         <h2>{t('report.title')}</h2>
         <p className="small muted" style={{ margin: '0 0 12px' }}>
@@ -208,8 +208,12 @@ export default function Report() {
         />
         <input ref={fileRef} type="file" accept="image/*" hidden onChange={onPickPhoto} />
 
-        <hr className="sep" />
+      </section>
 
+      {/* Second card: what the driver types and confirms, then sends. Split from
+          the card above so a wide screen can put the two side by side -- on a
+          dash tablet they stack again and read as one flow. */}
+      <section className="card report-detail">
         <label className="field">
           {t('report.note')}
           <textarea
