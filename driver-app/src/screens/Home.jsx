@@ -90,11 +90,16 @@ export default function Home() {
       )}
 
       {/* ---- route + map ---- */}
-      <section className="card pad0">
+      <section className="card pad0 route-card">
         <Suspense
-          fallback={<div style={{ height: 230, background: '#0a2b29' }} />}
+          fallback={<div className="map-slot" style={{ background: '#0a2b29' }} />}
         >
-          <MapView route={route} position={fix} reports={reports} height={230} />
+          {/* height is a floor; .route-card .map-slot grows it in landscape,
+              where a truck-mounted screen has width to spare and the map is the
+              thing a driver actually glances at. */}
+          <div className="map-slot">
+            <MapView route={route} position={fix} reports={reports} height="100%" />
+          </div>
         </Suspense>
         <div style={{ padding: 14 }}>
           <div className="row between" style={{ marginBottom: 8 }}>
