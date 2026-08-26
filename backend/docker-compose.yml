@@ -1,0 +1,56 @@
+# Backend slice of the platform. The team-wide compose file at the repo root
+# (Person 1 owns that too) adds the dashboard and driver-app services.
+#
+#   docker compose up --build
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    platform: linux/amd64
+    container_name: ner-db
+    environment:
+      POSTGRES_PASSWORD: ner
+      POSTGRES_DB: ner
+    ports:
+      - "5432:5432"
+    volumes:
+      - ner-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres -d ner"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 20s
+
+  redis:
+    image: redis:7-alpine
+    container_name: ner-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build: .
+    container_name: ner-backend
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://postgres:ner@db:5432/ner
+      REDIS_URL: redis://redis:6379/0
+      CORS_ORIGINS: http://localhost:3000,http://localhost:3001
+    ports:
+      - "8000:8000"
+    volumes:
+      # Keep the OSM download cache across rebuilds -- re-running load_ner.py
+      # then costs seconds instead of re-hitting Overpass (which rate-limits).
+      - osmnx-cache:/app/.osmnx-cache
+
+volumes:
+  ner-db-data:
+  osmnx-cache:
