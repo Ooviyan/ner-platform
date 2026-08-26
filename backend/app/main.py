@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 from app import store
 from app.config import settings
 from app.database import SessionLocal, db_available, db_status, get_db, init_db
-from app.routers import alerts, reports, routes, segments, vehicles, ws
+from app.routers import alerts, compat, reports, routes, segments, vehicles, ws
 from app.schemas import Health
 from app.simulation import simulator
 
@@ -51,6 +51,9 @@ TAGS = [
     {"name": "alerts", "description": "Advisories for the dashboard and driver push."},
     {"name": "websocket", "description": "Streaming endpoints."},
     {"name": "system", "description": "Health and platform summary."},
+    {"name": "driver-app (/api)", "description":
+        "Compatibility routes for the driver PWA. Same data as the canonical "
+        "endpoints, in the shape that app already speaks."},
 ]
 
 
@@ -116,6 +119,8 @@ app.include_router(vehicles.router)
 app.include_router(reports.router)
 app.include_router(alerts.router)
 app.include_router(ws.router)
+# Driver-PWA dialect; delegates to the same store as the canonical routes.
+app.include_router(compat.router)
 
 
 @app.get("/", include_in_schema=False)

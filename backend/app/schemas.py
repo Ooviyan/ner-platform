@@ -20,7 +20,7 @@ AlertStatus = Literal["pending", "sent", "acknowledged", "failed"]
 ReportStatus = Literal["pending", "verified", "resolved", "rejected"]
 ReportType = Literal[
     "landslide", "flooding", "road_damage", "traffic_block",
-    "accident", "bridge_damage", "snow", "sos", "other",
+    "accident", "bridge_damage", "heavy_rain", "snow", "sos", "other",
 ]
 Language = Literal["en", "as", "bn", "hi", "ne", "lus", "mni"]
 
@@ -243,3 +243,172 @@ class VehicleStream(BaseModel):
 
 
 Route.model_rebuild()
+
+
+# ---------------------------------------------------------------------------
+# Driver-PWA compatibility shapes (the /api/* routes).
+#
+# The driver app was built against its own fixtures before the API existed, so
+# it speaks a slightly different dialect: `note` for description, `flood` for
+# `flooding`, origin/destination as objects, segment paths as [lat, lng] pairs
+# in Leaflet order rather than GeoJSON. These models are that dialect. The
+# canonical routes keep the ../mock-data contract untouched.
+# ---------------------------------------------------------------------------
+
+# What the driver app calls a report type -> what the contract calls it.
+REPORT_TYPE_ALIASES = {
+    "flood": "flooding",
+    "blocked_road": "traffic_block",
+    "road_block": "traffic_block",
+    "damaged_bridge": "bridge_damage",
+    "water_logging": "flooding",
+}
+
+# Leaflet colour buckets the PWA understands, from our status + risk.
+def driver_segment_status(status: str, risk: float) -> str:
+    """Map contract status/risk onto the PWA's clear|caution|high_risk|blocked."""
+    if status == "closed":
+        return "blocked"
+    if risk >= 0.6:
+        return "high_risk"
+    if risk >= 0.3:
+        return "caution"
+    return "clear"
+
+
+class DriverWaypoint(BaseModel):
+    name: Optional[str] = None
+    state: Optional[str] = None
+    lat: float
+    lng: float
+
+
+class DriverVehicle(BaseModel):
+    vehicle_id: str
+    driver_name: Optional[str] = None
+    type: Optional[str] = None
+    cargo: Optional[str] = None
+    cargo_weight_kg: Optional[int] = None
+
+
+class DriverSegment(BaseModel):
+    id: str
+    name: str
+    distance_km: float
+    eta_min: int
+    risk: float
+    status: Literal["clear", "caution", "high_risk", "blocked"]
+    # [lat, lng] pairs -- Leaflet order, NOT GeoJSON.
+    path: List[List[float]]
+
+
+class DriverAlternative(BaseModel):
+    id: str
+    chosen: bool = False
+    eta_min: int
+    delay_min: int
+    risk: float
+    label: Optional[str] = None
+
+
+class DriverRoute(BaseModel):
+    """Shape returned by GET /api/routes/current (the PWA's route.json)."""
+
+    id: str
+    origin: DriverWaypoint
+    destination: DriverWaypoint
+    chosen: bool
+    eta_min: int
+    delay_min: int
+    risk: float
+    vehicle: DriverVehicle
+    segments: List[DriverSegment]
+    alternatives: List[DriverAlternative] = []
+
+
+class DriverReportCreate(BaseModel):
+    """POST /api/reports -- the driver app's report dialect."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "event_id": "9f2c1a77-3b1e-4a55-9b0e-1f2d3c4b5a60",
+                "type": "flood",
+                "lat": 27.1935,
+                "lng": 88.5142,
+                "accuracy": 12.5,
+                "note": "Water over the carriageway for about 200 m.",
+                "photo": None,
+                "vehicle_id": "SK-01-J-4471",
+                "timestamp": "2026-08-26T11:42:11+05:30",
+            }
+        }
+    )
+
+    event_id: Optional[str] = None
+    type: str = Field(description="Accepts the app's vocabulary; aliased to the contract's.")
+    lat: float = Field(ge=-90, le=90)
+    lng: float = Field(ge=-180, le=180)
+    accuracy: Optional[float] = Field(default=None, description="GPS accuracy in metres.")
+    note: Optional[str] = Field(default=None, description="Free text; becomes `description`.")
+    photo: Optional[str] = None
+    vehicle_id: Optional[str] = None
+    timestamp: Optional[str] = None
+    severity: Optional[Severity] = None
+
+
+class DriverAlertCreate(BaseModel):
+    """POST /api/alerts -- an SOS raised from the driver app.
+
+    Carries no coordinates and no title: the app sends only who to notify and
+    how bad it is, so both are filled in from the vehicle's last known fix.
+    """
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "id": "alt-9f2c1a77",
+                "event": "sos_accident",
+                "severity": "critical",
+                "recipients": ["mdoner-control-room", "nearest-patrol-unit"],
+                "lang": "en",
+                "status": "raised",
+            }
+        }
+    )
+
+    id: Optional[str] = None
+    event: Optional[str] = Field(default=None, description='e.g. "sos_accident".')
+    severity: Severity = "high"
+    recipients: List[str] = []
+    lang: str = "en"
+    status: Optional[str] = Field(default=None, description='"raised" maps to "pending".')
+    vehicle_id: Optional[str] = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    title: Optional[str] = None
+    message: Optional[str] = None
+
+
+class LocationPingCreate(BaseModel):
+    """POST /api/alerts/location -- one fix while an SOS is running."""
+
+    alert_id: Optional[str] = None
+    vehicle_id: Optional[str] = None
+    node: Optional[str] = None
+    lat: Optional[float] = Field(default=None, ge=-90, le=90)
+    lng: Optional[float] = Field(default=None, ge=-180, le=180)
+    accuracy: Optional[float] = None
+    at: Optional[str] = None
+
+
+class LocationPingAck(BaseModel):
+    id: int
+    alert_id: Optional[str] = None
+    vehicle_id: Optional[str] = None
+    node: Optional[str] = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    accuracy: Optional[float] = None
+    at: Optional[str] = None
+    received_at: str

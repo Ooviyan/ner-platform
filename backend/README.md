@@ -75,6 +75,48 @@ image is amd64-only and runs emulated — correct, just slower to start.
 | `GET` | `/health` | Status, DB mode, record counts |
 | `WS` | `/ws/vehicles` | Live simulated GPS stream |
 
+### Driver-app routes (`/api/*`)
+
+The driver PWA was built against its own fixtures before this API existed, so it
+speaks a slightly different dialect. Rather than rewrite a working app — or bend
+the shared contract to one client — `app/routers/compat.py` translates:
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| `GET` | `/api/routes/current` | Route for a vehicle, nested shape, `path` as `[lat, lng]` |
+| `GET` | `/api/reports` | Same data as `/reports` |
+| `POST` | `/api/reports` | Accepts `note`, `accuracy`, and aliased types |
+| `POST` | `/api/alerts` | One-tap SOS: no coordinates or title needed |
+| `POST` | `/api/alerts/location` | Position ping while an SOS is running |
+| `GET` | `/api/alerts/location` | The trail of fixes for an alert |
+
+Translations applied:
+
+| Driver app sends | Stored as |
+| --- | --- |
+| `type: flood` | `flooding` |
+| `type: blocked_road` | `traffic_block` |
+| `note` | `description` (with GPS accuracy appended) |
+| `status: raised` | `pending` |
+| SOS with no `lat`/`lng` | position taken from the vehicle's last fix |
+| SOS with no `title` | synthesised from `event` (`sos_accident` → "SOS - accident reported") |
+| segment `status` | `clear` / `caution` / `high_risk` / `blocked` for the map |
+
+`heavy_rain` was added to the accepted report types. The canonical routes are
+untouched — `tests/test_driver_api.py` asserts the dialect does not leak into
+them.
+
+**One change still needed on the app side:** `fetchRoute()` in
+`src/api/client.js` calls `/api/routes/current` with no parameters, so the
+backend picks a vehicle rather than *the* vehicle. One line fixes it:
+
+```js
+return request(`/api/routes/current?vehicle_id=${encodeURIComponent(VEHICLE_ID)}`)
+```
+
+Until then an unknown or missing id resolves to a vehicle on a chosen route, and
+the response names which one under `vehicle.vehicle_id`.
+
 ### Useful query parameters
 
 ```
@@ -171,10 +213,11 @@ backend/
 │   ├── geo.py           haversine, interpolation, WKT
 │   ├── places.py        place-name resolution for ?from=/?to=
 │   ├── ner_states.py    the eight states
-│   └── routers/         segments, routes, vehicles, reports, alerts, ws
+│   └── routers/         segments, routes, vehicles, reports, alerts, ws,
+│                        compat (the /api/* driver-app dialect)
 ├── load_ner.py          OSM loader
 ├── check_contract.py    verifies the API still matches ../mock-data
-├── tests/test_api.py    40 tests, no database needed
+├── tests/               64 tests, no database needed
 ├── Dockerfile
 └── docker-compose.yml
 ```
@@ -185,7 +228,7 @@ backend/
 pytest
 ```
 
-40 tests, ~1s. `tests/conftest.py` points `DATABASE_URL` at a closed port, so the
+64 tests, ~1.5s. `tests/conftest.py` points `DATABASE_URL` at a closed port, so the
 suite always runs on the in-memory seed and passes whether or not the compose
 stack is up — otherwise a developer with `load_ner.py` data loaded would see
 every count assertion fail.
