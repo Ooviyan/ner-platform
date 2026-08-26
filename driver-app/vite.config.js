@@ -17,7 +17,14 @@ function serveMockData() {
     name: 'ner-serve-mock-data',
     configureServer(server) {
       server.middlewares.use('/mock-data', (req, res, next) => {
-        const rel = decodeURIComponent((req.url || '/').split('?')[0]).replace(/^\/+/, '')
+        // A malformed escape (e.g. /mock-data/%E0) makes decodeURIComponent
+        // throw, which would take the whole dev server down. Treat it as a miss.
+        let rel
+        try {
+          rel = decodeURIComponent((req.url || '/').split('?')[0]).replace(/^\/+/, '')
+        } catch {
+          return next()
+        }
         const file = path.resolve(MOCK_DIR, rel)
         if (!file.startsWith(MOCK_DIR) || !fs.existsSync(file) || !fs.statSync(file).isFile()) return next()
         res.setHeader('Content-Type', 'application/json; charset=utf-8')

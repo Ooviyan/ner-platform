@@ -53,9 +53,12 @@ export const NODE_ID = persisted(LS.nodeId, () =>
 
 const LETTERS = 'ABCDEFGH'
 export const NODE_LABEL = (() => {
-  const forced = readParam('node')
-  if (forced) {
-    sessionStorage.setItem(LS.nodeLabel, forced.toUpperCase().slice(0, 2))
+  // `?node=` pins one node letter for the multi-tab mesh demo. Anything outside
+  // A-H is ignored rather than persisted, so a typo cannot produce a node label
+  // the range/relay logic does not understand.
+  const forced = (readParam('node') || '').toUpperCase().slice(0, 1)
+  if (LETTERS.includes(forced)) {
+    sessionStorage.setItem(LS.nodeLabel, forced)
   }
   return persisted(LS.nodeLabel, () => LETTERS[Math.floor(Math.random() * LETTERS.length)])
 })()
@@ -88,8 +91,15 @@ export const STORAGE_KEYS = LS
 export function uuid() {
   if (globalThis.crypto?.randomUUID) return crypto.randomUUID()
   const b = new Uint8Array(16)
-  ;(globalThis.crypto || { getRandomValues: a => a.map(() => (Math.random() * 256) | 0) })
-    .getRandomValues(b)
+  if (globalThis.crypto?.getRandomValues) {
+    crypto.getRandomValues(b)
+  } else {
+    // Math.random is a poor substitute, but a colliding id is far worse: these
+    // become event_ids, and the backend de-duplicates on them, so two reports
+    // sharing one id means the second is silently discarded. Fill in place --
+    // TypedArray.map() returns a new array and would leave `b` all zeros.
+    for (let i = 0; i < b.length; i++) b[i] = (Math.random() * 256) | 0
+  }
   b[6] = (b[6] & 0x0f) | 0x40
   b[8] = (b[8] & 0x3f) | 0x80
   const h = [...b].map(x => x.toString(16).padStart(2, '0')).join('')
