@@ -42,7 +42,13 @@ export const SOS_TYPES = [
   { id: 'danger', icon: '⚠️' },
 ]
 
-/** Strip local bookkeeping so we POST exactly the agreed contract shape. */
+/** Strip local bookkeeping so we POST exactly the agreed contract shape.
+ *
+ * `row.state` is deliberately NOT sent. Here it is this device's sync status
+ * (pending | relaying | synced | failed), but in the shared contract `state` is
+ * the Indian state a report happened in -- the backend fills that in from the
+ * nearest road segment. Sending ours would put "synced" where "Sikkim" belongs.
+ */
 export function toContract(row) {
   return {
     event_id: row.event_id,
@@ -52,6 +58,5 @@ export function toContract(row) {
     timestamp: row.timestamp,
     photo: row.photo ?? null,
     vehicle_id: row.vehicle_id,
-    state: row.state,
   }
 }

@@ -147,6 +147,9 @@ export function publish(type, payload) {
   // Mark as seen so our own broadcast does not loop back through the WS relay.
   seen.add(msg.mid)
   seenOrder.push(msg.mid)
+  // Same eviction as deliver(): without it a long-running node grows `seen`
+  // by one entry per published message and never gives the memory back.
+  if (seenOrder.length > SEEN_LIMIT) seen.delete(seenOrder.shift())
   return msg
 }
 

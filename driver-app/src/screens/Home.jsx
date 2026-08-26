@@ -19,6 +19,20 @@ import { Refresh, Upload } from '../components/icons.jsx'
 // Leaflet is the single biggest dependency and only this screen needs it.
 const MapView = lazy(() => import('../components/MapView.jsx'))
 
+/**
+ * Route endpoints reach us in two shapes: `{ name, state }` from the backend's
+ * /api/routes/current, and a plain "Siliguri, West Bengal" string in the shared
+ * mock-data contract. Normalise both so the header never renders blank.
+ */
+function place(value) {
+  if (!value) return { name: '', state: '' }
+  if (typeof value === 'string') {
+    const [name, state] = value.split(',').map(part => part.trim())
+    return { name: name || value, state: state || '' }
+  }
+  return { name: value.name || '', state: value.state || '' }
+}
+
 export default function Home() {
   const { t } = useTranslation()
   const { route, loading, stale, reload } = useRoute()
@@ -57,6 +71,8 @@ export default function Home() {
   }
 
   const v = route.vehicle || {}
+  const from = place(route.origin)
+  const to = place(route.destination)
   const totalKm = (route.segments || []).reduce((a, s) => a + (s.distance_km || 0), 0)
 
   return (
@@ -88,11 +104,13 @@ export default function Home() {
             </span>
           </div>
           <h2 style={{ fontSize: 16 }}>
-            {route.origin?.name} → {route.destination?.name}
+            {from.name} → {to.name}
           </h2>
-          <p className="small muted" style={{ margin: '2px 0 0' }}>
-            {route.origin?.state} → {route.destination?.state}
-          </p>
+          {(from.state || to.state) && (
+            <p className="small muted" style={{ margin: '2px 0 0' }}>
+              {from.state} → {to.state}
+            </p>
+          )}
           <hr className="sep" />
           <div className="row">
             <Stat value={formatEta(route.eta_min, t)} label={t('home.eta')} />
