@@ -49,14 +49,14 @@ def _load() -> dict[str, Any] | None:
                 if trained_on != FEATURES:
                     raise ValueError(
                         f"feature mismatch: model trained on {trained_on}, "
-                        f"features.py defines {FEATURES}. Retrain with train.py.")
+                        f"features.py defines {FEATURES}. Retrain with train_risk.py.")
                 _bundle = bundle
                 log.info("loaded risk model %s trained %s",
                          bundle.get("model_version"), bundle.get("trained_at"))
             except FileNotFoundError:
                 _load_failed = True
                 log.warning("%s not found - falling back to heuristic risk. "
-                            "Run `python train.py` in ml/ to build it.", MODEL_PATH.name)
+                            "Run `python train_risk.py` in ml/ to build it.", MODEL_PATH.name)
             except Exception:
                 _load_failed = True
                 log.exception("could not load %s - falling back to heuristic risk",
@@ -114,31 +114,12 @@ def risk_band(risk: float) -> str:
 def explain(features: Mapping[str, Any], top_n: int = 3) -> list[dict[str, Any]]:
     """Per-segment SHAP attribution: why is this road red?
 
-    Returns the top contributors, each as
-    {"feature", "value", "contribution", "direction"}, contribution in log-odds.
-    Feeds the dashboard's explainability panel - "driven by 3-day rainfall and
-    28 degree slope" - which is what buys government trust.
+    Kept here because Person 1 already imports `risk.explain`. The implementation
+    lives in explain.py -- imported lazily, since explain.py imports this module
+    for the model cache and heuristic fallback.
     """
-    bundle = _load()
-    row = to_row(features)
-    if bundle is None:
-        # No model, no SHAP. Report the heuristic's own terms so the caller
-        # still gets an honest answer instead of an empty list.
-        return [{"feature": "heuristic", "value": None,
-                 "contribution": _heuristic(features), "direction": "increases",
-                 "note": "risk_model.pkl unavailable; heuristic fallback in use"}]
-
-    import xgboost as xgb
-    dmatrix = xgb.DMatrix([row], feature_names=FEATURES)
-    contribs = bundle["model"].get_booster().predict(dmatrix, pred_contribs=True)[0]
-
-    ranked = sorted(zip(FEATURES, row, contribs[:-1]),
-                    key=lambda item: -abs(item[2]))[:top_n]
-    return [{"feature": name,
-             "value": value,
-             "contribution": round(float(contribution), 4),
-             "direction": "increases" if contribution > 0 else "reduces"}
-            for name, value, contribution in ranked]
+    from explain import explain as _explain
+    return _explain(features, top_n=top_n)
 
 
 def model_info() -> dict[str, Any]:
