@@ -1,0 +1,23 @@
+# --- API ---------------------------------------------------------------
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+python-dotenv==1.0.1
+websockets==14.1
+
+# --- database ----------------------------------------------------------
+SQLAlchemy==2.0.36
+GeoAlchemy2==0.16.0
+psycopg[binary]==3.2.3
+redis==5.2.1
+
+# --- OSM loading (load_ner.py only) ------------------------------------
+osmnx==2.0.1
+geopandas==1.0.1
+shapely==2.0.6
+networkx==3.4.2
+requests==2.32.3
+
+# --- tests -------------------------------------------------------------
+httpx==0.28.1
+pytest==8.3.4
