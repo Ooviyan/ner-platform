@@ -294,6 +294,79 @@ def _summarise(route: dict) -> dict:
     }
 
 
+def _model_route(db: Optional[Session], origin: geo.Coord, origin_name: str,
+                 destination: geo.Coord, destination_name: str,
+                 profile: str) -> Optional[dict]:
+    """A* over the live network, mapped into the shared contract shape.
+
+    Returns None when the intelligence layer is unavailable or the two points
+    are not connected in the current graph, so the caller can fall back.
+    """
+    from app.intelligence import ml
+
+    if not ml.available():
+        return None
+
+    segments = list_segments(db, limit=10_000)
+    if not segments:
+        return None
+    reports = list_reports(db, limit=1_000)
+
+    found = ml.route(segments, origin, destination, reports=reports, profile=profile)
+    if not found:
+        return None
+
+    by_id = {s["id"]: s for s in segments}
+    used = [by_id[sid] for sid in found["segments"] if sid in by_id]
+    closed = [s["id"] for s in used if s["status"] == "closed"]
+
+    advisories: List[str] = []
+    if found.get("advisory") == "no_safe_route":
+        advisories.append(
+            "No safe corridor: every option has a segment above "
+            f"{found['max_segment_risk']:.0%} risk. Escalate to emergency access.")
+    if closed:
+        advisories.insert(0, f"{len(closed)} segment(s) on this route are closed.")
+    note = _PROFILE_NOTE.get(profile)
+    if note:
+        advisories.append(note)
+    advisories.append(
+        f"Computed by A* over {len(segments)} live segments "
+        f"(worst segment risk {found['max_segment_risk']:.2f}).")
+
+    coords: List[geo.Coord] = []
+    for segment in used:
+        pts = [tuple(c) for c in segment["geometry"]["coordinates"]]
+        if coords and coords[-1] == pts[0]:
+            pts = pts[1:]
+        coords.extend(pts)
+
+    risk = round(float(found["risk"]), 4)
+    return {
+        "id": f"RTE-LIVE-{profile.upper()[:4]}",
+        "origin": origin_name,
+        "destination": destination_name,
+        "chosen": profile == "safest" and not closed,
+        "eta_min": found["eta_min"],
+        "delay_min": max(0, found["delay_min"]),
+        "risk": risk,
+        "segments": found["segments"],
+        "geometry": geo.linestring(coords or [origin, destination]),
+        "origin_point": {"lng": origin[0], "lat": origin[1]},
+        "destination_point": {"lng": destination[0], "lat": destination[1]},
+        "distance_km": found.get("distance_km"),
+        "risk_band": seed.risk_band(risk),
+        "accessibility": found.get("min_accessibility"),
+        "passable": not closed and found.get("advisory") != "no_safe_route",
+        "closed_segments": closed,
+        "advisories": advisories,
+        "profile": profile,
+        "generated_at": _iso(_now()),
+        "alternatives": [],
+        "computed_by": "ml.routing.a-star",
+    }
+
+
 def find_route(
     db: Optional[Session],
     origin: geo.Coord,
@@ -302,13 +375,21 @@ def find_route(
     destination_name: str,
     profile: str = "safest",
     avoid_closed: bool = True,
+    use_model: bool = True,
 ) -> dict:
     """Best route between two points.
 
-    Prefers a pre-computed corridor when the endpoints line up with one; otherwise
-    synthesises a direct corridor. Person 2's `ml/routing.py safest_route()`
-    replaces the scoring here at merge time -- this function is that seam.
+    Runs Person 2's A* over a live risk-weighted graph when the intelligence
+    layer is available -- a real search over the current network, not a lookup.
+    Falls back to matching a pre-computed corridor, then to a direct line, so the
+    endpoint still answers when `ml/` is missing.
     """
+    if use_model:
+        computed = _model_route(db, origin, origin_name, destination,
+                                destination_name, profile)
+        if computed is not None:
+            return computed
+
     candidates = list_routes(db)
     scored = sorted(candidates, key=lambda r: _score(r, origin, destination))
     best = scored[0] if scored else None
@@ -700,12 +781,23 @@ def driver_route(db: Optional[Session], vehicle_id: Optional[str] = None) -> Opt
     vehicle = resolve_vehicle(db, vehicle_id)
     if vehicle is None:
         return None
-    route = get_route(db, vehicle.get("route_id")) if vehicle.get("route_id") else None
-    if route is None:
+    assigned = get_route(db, vehicle.get("route_id")) if vehicle.get("route_id") else None
+    if assigned is None:
         candidates = list_routes(db)
-        route = next((r for r in candidates if r["chosen"]), candidates[0] if candidates else None)
-    if route is None:
+        assigned = next((r for r in candidates if r["chosen"]),
+                        candidates[0] if candidates else None)
+    if assigned is None:
         return None
+
+    # The dispatcher assigns an origin and destination; the SAFEST WAY THERE is
+    # recomputed on every request against current risk. Returning the stored
+    # corridor would hand the driver a route chosen before today's rain.
+    route = assigned
+    start, end = assigned["origin_point"], assigned["destination_point"]
+    live = _model_route(db, (start["lng"], start["lat"]), assigned["origin"],
+                        (end["lng"], end["lat"]), assigned["destination"], "safest")
+    if live is not None:
+        route = {**assigned, **live, "id": assigned["id"]}
 
     origin_name, origin_state = _split_place(route["origin"])
     dest_name, dest_state = _split_place(route["destination"])

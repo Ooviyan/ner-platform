@@ -50,9 +50,22 @@ def _load() -> dict[str, Any] | None:
                     raise ValueError(
                         f"feature mismatch: model trained on {trained_on}, "
                         f"features.py defines {FEATURES}. Retrain with train_risk.py.")
+                trained_with = bundle.get("xgboost_version")
+                if trained_with:
+                    import xgboost as _xgb
+                    if _xgb.__version__ != trained_with:
+                        # Not cosmetic: the same pickle scored 0.9709 on 3.4.1 and
+                        # 0.9938 on 2.1.3, which is enough to change which road a
+                        # truck is sent down. Pin both sides to the same version.
+                        log.warning(
+                            "risk_model.pkl was trained with xgboost %s but this "
+                            "process has %s - predictions WILL differ. Pin both to "
+                            "the same version, or retrain with train_risk.py.",
+                            trained_with, _xgb.__version__)
                 _bundle = bundle
-                log.info("loaded risk model %s trained %s",
-                         bundle.get("model_version"), bundle.get("trained_at"))
+                log.info("loaded risk model %s trained %s (xgboost %s)",
+                         bundle.get("model_version"), bundle.get("trained_at"),
+                         trained_with or "unrecorded")
             except FileNotFoundError:
                 _load_failed = True
                 log.warning("%s not found - falling back to heuristic risk. "

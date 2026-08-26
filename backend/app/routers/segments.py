@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app import store
 from app.database import get_db
+from app.intelligence import ml
 from app.ner_states import NER_STATES, normalize_state
 from app.schemas import Segment, StateInfo
 
@@ -29,6 +30,11 @@ def list_segments(
     ),
     limit: int = Query(500, ge=1, le=10_000),
     offset: int = Query(0, ge=0),
+    scored: bool = Query(
+        True,
+        description="Score risk/accessibility with the ML model. "
+                    "false returns the stored column values.",
+    ),
     db: Optional[Session] = Depends(get_db),
 ):
     if state and normalize_state(state) is None:
@@ -41,10 +47,19 @@ def list_segments(
                 raise ValueError
         except ValueError:
             raise HTTPException(422, "bbox must be min_lng,min_lat,max_lng,max_lat")
-    return store.list_segments(
+    rows = store.list_segments(
         db, state=state, status=status, risk_band=risk_band, min_risk=min_risk,
         highway=highway, bbox=box, limit=limit, offset=offset,
     )
+    if not scored or not ml.available():
+        return rows
+    # Risk and accessibility from the model rather than the stored column, with
+    # driver reports folded in. Contract fields keep their names and types.
+    graded = ml.score(rows, store.list_reports(db, limit=1_000))
+    # The store sorted on the stored risk; re-sort on what we are actually
+    # returning, or the order contradicts the numbers.
+    graded.sort(key=lambda s: (-float(s.get("risk") or 0.0), str(s.get("id"))))
+    return graded
 
 
 @router.get("/segments/{segment_id}", response_model=Segment, summary="One segment")

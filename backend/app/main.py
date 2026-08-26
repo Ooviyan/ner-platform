@@ -20,6 +20,7 @@ from app import store
 from app.config import settings
 from app.database import SessionLocal, db_available, db_status, get_db, init_db
 from app.routers import alerts, compat, reports, routes, segments, vehicles, ws
+from app.intelligence import ml
 from app.schemas import Health
 from app.simulation import simulator
 
@@ -134,6 +135,7 @@ def health(db: Optional[Session] = Depends(get_db)):
         "status": "ok",
         "version": settings.version,
         "database": db_status(),
+        "intelligence": ml.status(),
         "counts": {
             "segments": len(store.list_segments(db, limit=10_000)),
             "routes": len(store.list_routes(db)),

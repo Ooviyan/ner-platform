@@ -44,12 +44,16 @@ services:
       DATABASE_URL: postgresql+psycopg://postgres:ner@db:5432/ner
       REDIS_URL: redis://redis:6379/0
       CORS_ORIGINS: http://localhost:3000,http://localhost:3001
+      ML_DIR: /ml
     ports:
       - "8000:8000"
     volumes:
       # Keep the OSM download cache across rebuilds -- re-running load_ner.py
       # then costs seconds instead of re-hitting Overpass (which rate-limits).
       - osmnx-cache:/app/.osmnx-cache
+      # Person 2's models, read-only. app/intelligence.py degrades to stored
+      # risk/accessibility if this is not mounted.
+      - ../ml:/ml:ro
 
 volumes:
   ner-db-data:

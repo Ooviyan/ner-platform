@@ -1,6 +1,6 @@
 # Person 2 - AI/ML & Routing. Python 3.11+
 scikit-learn>=1.5
-xgboost>=2.1
+xgboost==3.4.1            # PINNED: predictions differ between majors
 pandas>=2.2
 numpy>=1.26
 networkx>=3.3

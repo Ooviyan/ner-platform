@@ -48,6 +48,11 @@ class Segment(BaseModel):
     risk_band: Optional[Severity] = None
     source: Optional[str] = None
     updated_at: Optional[str] = None
+    # --- set when the ML layer scored this row (GET /segments?scored=true) ---
+    why: Optional[str] = Field(
+        default=None, description='Plain-English driver, e.g. "driven by 310 mm of rain over 72h".')
+    ml: Optional[Dict[str, Any]] = Field(
+        default=None, description="SHAP detail, penalties, and which source each feature came from.")
 
 
 class Point(BaseModel):
@@ -78,6 +83,8 @@ class Route(BaseModel):
     profile: Optional[str] = None
     generated_at: Optional[str] = None
     alternatives: List["RouteSummary"] = []
+    computed_by: Optional[str] = Field(
+        default=None, description='"ml.routing.a-star" when a real search produced this.')
 
 
 class RouteSummary(BaseModel):
@@ -230,6 +237,7 @@ class Health(BaseModel):
     status: str
     version: str
     database: Dict[str, Any]
+    intelligence: Dict[str, Any] = {}
     counts: Dict[str, int]
 
 

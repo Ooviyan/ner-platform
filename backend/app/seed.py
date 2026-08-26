@@ -66,11 +66,11 @@ _SEGMENTS = [
     ("SEG-SK-NH10-001", "NH-10 Rangpo - Singtam (Teesta Corridor, Sikkim)",
      "sikkim", "NH-10", "national_highway",
      [(88.5290, 27.1760), (88.5142, 27.1935), (88.5031, 27.2148), (88.4980, 27.2340)],
-     "asphalt", 2, 380, 18.2, 86.0, 214.0, 0.82, 34, "restricted"),
+     "asphalt", 2, 460, 31.0, 86.0, 214.0, 0.82, 34, "restricted"),
     ("SEG-SK-NH10-002", "NH-10 Singtam - Ranipool - Gangtok (Sikkim)",
      "sikkim", "NH-10", "national_highway",
      [(88.4980, 27.2340), (88.5416, 27.2701), (88.5877, 27.3062), (88.6138, 27.3314)],
-     "asphalt", 2, 1420, 14.8, 62.0, 151.0, 0.47, 71, "open"),
+     "asphalt", 2, 980, 22.0, 62.0, 151.0, 0.47, 71, "open"),
     ("SEG-AS-NH27-014", "NH-27 Jalukbari - Khanapara (Guwahati, Assam)",
      "assam", "NH-27", "national_highway",
      [(91.6650, 26.1520), (91.7096, 26.1461), (91.7580, 26.1372), (91.8000, 26.1290)],
@@ -84,7 +84,31 @@ _SEGMENTS = [
     ("SEG-SK-NH10-003", "NH-10 Sevoke - Rangpo (Teesta Valley, Sikkim)",
      "sikkim", "NH-10", "national_highway",
      [(88.4275, 26.7271), (88.4720, 26.9010), (88.5290, 27.1760)],
-     "asphalt", 2, 310, 21.5, 86.0, 214.0, 0.71, 44, "restricted"),
+     "asphalt", 2, 340, 28.5, 86.0, 214.0, 0.71, 44, "restricted"),
+    # --- the Rorathang - Pakyong bypass ---
+    # A real state-highway alternative to the Teesta gorge stretch of NH-10.
+    # Without it the network has exactly one Siliguri->Gangtok path and the
+    # router has nothing to choose between; with it, a wet day can genuinely
+    # send a truck the long way round. It rejoins at Ranipool, so the two
+    # contract segments (SEG-SK-NH10-001/002) are left exactly as agreed.
+    ("SEG-SK-SH01-001", "Rangpo - Rorathang (state highway, Sikkim)",
+     "sikkim", "SH-01", "state_highway",
+     [(88.5290, 27.1760), (88.5520, 27.1640), (88.5800, 27.1600),
+      (88.6050, 27.1700), (88.6150, 27.1900)],
+     "asphalt", 2, 620, 16.0, 61.0, 158.0, 0.34, 79, "open"),
+    ("SEG-SK-SH01-002", "Rorathang - Pakyong (Sikkim)",
+     "sikkim", "SH-01", "state_highway",
+     [(88.6150, 27.1900), (88.6220, 27.2100), (88.6100, 27.2300)],
+     "asphalt", 2, 1150, 19.0, 58.0, 149.0, 0.31, 81, "open"),
+    ("SEG-SK-SH01-003", "Pakyong - Ranipool (Sikkim)",
+     "sikkim", "SH-01", "state_highway",
+     [(88.6100, 27.2300), (88.6050, 27.2500), (88.5860, 27.2680)],
+     "asphalt", 2, 1300, 17.0, 55.0, 141.0, 0.28, 83, "open"),
+    ("SEG-SK-NH10-004", "NH-10 Ranipool - Gangtok (Sikkim)",
+     "sikkim", "NH-10", "national_highway",
+     [(88.5860, 27.2680), (88.5960, 27.2940), (88.6080, 27.3160), (88.6138, 27.3314)],
+     "asphalt", 2, 1420, 18.0, 62.0, 151.0, 0.29, 84, "open"),
+
     ("SEG-SK-NH310-001", "NH-310 Gangtok - Nathu La (Sikkim)",
      "sikkim", "NH-310", "national_highway",
      [(88.6138, 27.3314), (88.7400, 27.3700), (88.8300, 27.3870)],
