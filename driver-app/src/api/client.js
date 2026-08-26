@@ -1,4 +1,4 @@
-import { API_URL, MOCK_MODE, uuid } from '../config.js'
+import { API_URL, MOCK_MODE, VEHICLE_ID, uuid } from '../config.js'
 import { isLinkUp } from '../net/link.js'
 
 class ApiError extends Error {
@@ -61,7 +61,10 @@ function simulateWrite(payload, { latency = 700 } = {}) {
 
 /** Current route assignment for this vehicle (route.json contract). */
 export async function fetchRoute() {
-  return MOCK_MODE ? request('/route.json') : request('/api/routes/current')
+  if (MOCK_MODE) return request('/route.json')
+  // Ask for THIS vehicle. Without the id the backend falls back to whichever
+  // vehicle is on a chosen route, so the driver would see someone else's run.
+  return request(`/api/routes/current?vehicle_id=${encodeURIComponent(VEHICLE_ID)}`)
 }
 
 /** Reports already known to the platform (report.json contract, as a list). */
