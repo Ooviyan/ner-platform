@@ -44,6 +44,7 @@ function FitBounds({ points }) {
 }
 
 export default function MapView({ route, position, reports = [], height = 240 }) {
+  // `height` may be a number (px) or a CSS length like '100%'.
   const { t } = useTranslation()
   const { linkUp } = useLink()
 

@@ -143,7 +143,7 @@ export default function Report() {
   }
 
   return (
-    <main className="screen">
+    <main className="screen report-screen">
       <section className="card">
         <h2>{t('report.title')}</h2>
         <p className="small muted" style={{ margin: '0 0 12px' }}>

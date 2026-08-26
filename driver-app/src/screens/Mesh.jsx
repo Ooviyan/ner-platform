@@ -125,7 +125,7 @@ export default function Mesh() {
   }
 
   return (
-    <main className="screen">
+    <main className="screen mesh-screen">
       {/* ---- honest labelling ---- */}
       <section className="card" style={{ borderColor: 'var(--accent-dim)' }}>
         <div className="row between">

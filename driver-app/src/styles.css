@@ -304,3 +304,195 @@ hr.sep { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
   color: var(--text);
   border-color: var(--line);
 }
+
+
+/* =========================================================================
+   Wide landscape: truck dash tablets AND laptops.
+
+   The portrait layout centres a 560px column, which on an 868x600 dash screen
+   leaves both outer thirds black and pushes the vehicle card under the tab bar,
+   and on a 1440x900 laptop looks like a phone screenshot pasted in the middle
+   of a desktop. A driver should not have to scroll, and should not have to
+   look twice.
+
+   One layout serves both: use the width, put the map and the headline numbers
+   side by side, and size the figures that matter to be read at arm's length.
+   The dash tablet is the tighter constraint, so it sets the design; a laptop
+   is the same layout with more room, capped so it does not sprawl.
+   ========================================================================= */
+@media (orientation: landscape) and (min-width: 760px) {
+  /* Uncapped would stretch a 3-column dashboard across a 27" monitor. 1400 is
+     about as wide as this content stays coherent. */
+  .app { max-width: 1400px; }
+
+  /* Tabs go horizontal: same targets, ~22px less height. */
+  .tabbar a {
+    flex-direction: row;
+    gap: 8px;
+    font-size: 13px;
+    padding: 6px 2px;
+    min-height: 52px;
+    border-top-width: 3px;
+  }
+  .tabbar a svg { width: 20px; height: 20px; }
+
+  /* Single column by default: only the route screen has something worth
+     putting beside the content. Report/SOS/Mesh/Settings are forms, and a form
+     stretched over 868px is harder to use, not easier -- so they stay centred
+     at a readable measure. */
+  .screen {
+    display: grid;
+    grid-template-columns: minmax(0, 680px);
+    justify-content: center;
+    align-content: start;
+    gap: 12px;
+    padding: 12px 12px calc(12px + var(--safe-b));
+  }
+
+  /* The route screen splits: map and headline numbers left, detail right. */
+  .screen:has(.route-card) {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    justify-content: stretch;
+  }
+  /* Undo the portrait flex rule; in grid it fights the row sizing. */
+  .screen > * { flex: initial; }
+
+  /* Full-width things stay full width. */
+  .screen > .banner,
+  .screen > .empty { grid-column: 1 / -1; }
+
+  /* Map + route summary hold the left column; the right column stacks beside
+     them. The map gets an explicit height rather than flex:1 -- the grid rows
+     are content-sized, so a percentage height inside them resolves to zero. */
+  .route-card {
+    grid-column: 1;
+    grid-row: 1 / span 99;
+    align-self: start;
+  }
+  /* Scales continuously with height rather than switching at a breakpoint:
+     600px dash screen -> 240px, 800px laptop -> 320px, 900px -> 360px. An
+     earlier version keyed this off max-height and treated a 1280x800 laptop as
+     a dash tablet, which is exactly the kind of threshold that ages badly. */
+  .route-card .map-slot { height: clamp(200px, 40vh, 480px); }
+
+  /* Everything else stacks down the right column -- only where there IS one. */
+  .screen:has(.route-card) > .card:not(.route-card),
+  .screen:has(.route-card) > section:not(.route-card) { grid-column: 2; }
+
+  /* Read-at-a-glance figures. A driver gets one look at these. */
+  .stat b { font-size: 30px; letter-spacing: -.6px; }
+  .stat span { font-size: 11px; letter-spacing: .8px; }
+  .route-card h2 { font-size: 20px; }
+  .pill, .pill.accent, .pill.warn, .pill.danger { font-size: 12.5px; padding: 5px 11px; }
+
+  /* Bigger hit areas: gloves, and a cab that moves. */
+  .btn { min-height: 50px; font-size: 15px; }
+
+  /* ---- Report: the whole form on the left, the queue on the right -------
+     The form is one thing and reads top-to-bottom - type, photo, note,
+     location, Submit - so it stays one column. The queue is reference, not
+     part of filling in the report, so it sits beside rather than below, which
+     is what used to push Submit off the bottom. */
+  .report-screen,
+  .mesh-screen,
+  .settings-screen {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    justify-content: stretch;
+    align-items: start;
+  }
+  .report-screen > .card:first-of-type { grid-column: 1; }
+  .report-screen > .card:last-of-type { grid-column: 2; }
+
+  /* ---- SOS: one centred column ------------------------------------------
+     Tried this as two columns and it read badly: a full-height red slab down
+     one side with an empty column of past alerts beside it. An emergency
+     screen wants one obvious thing to hit, centred, with nothing competing
+     for the eye - so it keeps a single column and just gets bigger. */
+  .sos-screen {
+    grid-template-columns: minmax(0, 620px);
+    justify-content: center;
+  }
+  .sos-screen > * { grid-column: 1; }
+  .sos-screen > .sos-btn {
+    /* !important: the component sets height inline for the phone layout. */
+    height: clamp(190px, 30vh, 300px) !important;
+  }
+
+  /* Four emergency types as a balanced 2x2. auto-fit wrapped them 3-then-1,
+     which reads as a mistake, and the odd one out was the smallest target on
+     the screen someone reaches for in a panic. */
+  .sos-screen .chips { grid-template-columns: 1fr 1fr; }
+  .sos-screen .chip { min-height: 66px; font-size: 15px; }
+
+  /* ---- Mesh: state left, explanation right ------------------------------
+     The demo explainer is the least urgent thing on the screen, so it stops
+     being the first thing between the driver and their own node status. */
+  .mesh-screen > .card:nth-of-type(1) { grid-column: 2; grid-row: 1; }
+  .mesh-screen > .card:nth-of-type(2) { grid-column: 1; grid-row: 1; }
+  .mesh-screen > .card:nth-of-type(3) { grid-column: 1; grid-row: 2; }
+  .mesh-screen > .card:nth-of-type(4) { grid-column: 2; grid-row: 2; }
+
+  /* ---- Settings: two columns, language across both ----------------------
+     Order matters: the odd/even rules come first so the span below wins on
+     card 1 without needing !important -- both selectors have the same
+     specificity, so the later one takes it. */
+  /* dense: without it each card claims its own row, so pinning cards to a
+     column leaves holes down the other one. */
+  .settings-screen { grid-auto-flow: row dense; }
+  .settings-screen > .card:nth-of-type(even) { grid-column: 2; }
+  .settings-screen > .card:nth-of-type(odd) { grid-column: 1; }
+  .settings-screen > .card:nth-of-type(1) { grid-column: 1 / -1; }
+
+  /* Five languages in a row of cards wasted a whole screen. */
+  .settings-screen .lang-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 8px;
+  }
+}
+
+/* Genuinely short screens only (dash tablets, ~600px): every vertical pixel is
+   contested, so trim the chrome. 700px, not 820px -- a 1280x800 laptop is a
+   laptop and should keep its subtitle and roomier bar. */
+@media (orientation: landscape) and (min-width: 760px) and (max-height: 700px) {
+  .topbar { padding: 6px 14px; }
+  .topbar .brand img { width: 26px; height: 26px; }
+  .topbar .brand span { display: none; }
+
+  /* The report form is one column now, and on a ~600px dash screen that column
+     is taller than the viewport - Submit ends up below the fold, which is the
+     one thing that must never happen on this screen. Tighten it rather than
+     splitting the form back across two columns: three across turns five chips
+     from three rows into two, and the note box does not need to be tall to be
+     usable. */
+  .report-screen .chips { grid-template-columns: repeat(3, 1fr); }
+  .report-screen .chip { min-height: 48px; }
+  .report-screen textarea.input { min-height: 56px; height: 56px; }
+  .report-screen .sep { margin: 8px 0; }
+  .report-screen h3 { margin-bottom: 4px; }
+
+  /* Even compacted, the form is ~110px taller than a 600px dash screen. Rather
+     than shave the rest of the content down to nothing, pin the action: Submit
+     stays on screen while the fields above it scroll. The driver can always
+     see how to send, which is the property that actually matters. */
+  .report-screen .btn.primary.block {
+    position: sticky;
+    bottom: -2px;
+    z-index: 5;
+    /* Solid spread in the card colour masks the fields scrolling underneath,
+       then a soft fade above it so the edge is not a hard line. The spread
+       follows the border-radius, which an outline would not. */
+    box-shadow:
+      0 0 0 10px var(--surface),
+      0 -20px 18px -6px var(--surface);
+  }
+
+  /* Past alerts can scroll out of view; the button never should. */
+  .sos-screen .chip { min-height: 54px; }
+}
+
+/* Portrait phones keep the map at its designed height. */
+@media not all and (orientation: landscape) {
+  .map-slot { height: 230px; }
+}
+.map-slot { height: 230px; }

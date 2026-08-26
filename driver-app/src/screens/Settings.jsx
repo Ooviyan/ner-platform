@@ -27,11 +27,13 @@ export default function Settings() {
   }
 
   return (
-    <main className="screen">
+    <main className="screen settings-screen">
       {/* ---- language ---- */}
       <section className="card">
         <h3>{t('settings.language')}</h3>
-        <div className="col" style={{ gap: 7 }}>
+        {/* .lang-grid flows these into columns on a wide screen; five
+            full-width rows wasted most of a laptop display. */}
+        <div className="col lang-grid" style={{ gap: 7 }}>
           {LANGUAGES.map(l => {
             const active = i18n.resolvedLanguage === l.code
             return (
