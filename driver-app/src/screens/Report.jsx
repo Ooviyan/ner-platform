@@ -208,12 +208,8 @@ export default function Report() {
         />
         <input ref={fileRef} type="file" accept="image/*" hidden onChange={onPickPhoto} />
 
-      </section>
+        <hr className="sep" />
 
-      {/* Second card: what the driver types and confirms, then sends. Split from
-          the card above so a wide screen can put the two side by side -- on a
-          dash tablet they stack again and read as one flow. */}
-      <section className="card report-detail">
         <label className="field">
           {t('report.note')}
           <textarea

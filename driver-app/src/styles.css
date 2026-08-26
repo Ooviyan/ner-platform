@@ -388,12 +388,12 @@ hr.sep { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
   /* Bigger hit areas: gloves, and a cab that moves. */
   .btn { min-height: 50px; font-size: 15px; }
 
-  /* ---- Report: pick-and-shoot on the left, describe-and-send on the right --
-     The single column made the driver scroll past the photo controls to reach
-     Submit. Split, both halves are visible at once and the button is never
-     below the fold. */
+  /* ---- Report: the whole form on the left, the queue on the right -------
+     The form is one thing and reads top-to-bottom - type, photo, note,
+     location, Submit - so it stays one column. The queue is reference, not
+     part of filling in the report, so it sits beside rather than below, which
+     is what used to push Submit off the bottom. */
   .report-screen,
-  .sos-screen,
   .mesh-screen,
   .settings-screen {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -401,24 +401,28 @@ hr.sep { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
     align-items: start;
   }
   .report-screen > .card:first-of-type { grid-column: 1; }
-  .report-screen > .report-detail { grid-column: 2; }
-  .report-screen > .card:last-of-type:not(.report-detail) { grid-column: 2; }
+  .report-screen > .card:last-of-type { grid-column: 2; }
 
-  /* ---- SOS: the button is the screen ------------------------------------
-     Emergency type and the hold target take the left column at full height;
-     history sits out of the way on the right. Nobody scrolls during an
-     emergency. */
-  .sos-screen > .card:first-of-type { grid-column: 1; }
-  /* An alert already in flight keeps the single-column layout: the driver is
-     mid-emergency and the screen should not rearrange under them. */
-  .sos-screen:not(:has(.sos-btn)) { grid-template-columns: minmax(0, 680px); justify-content: center; }
-  .sos-screen:not(:has(.sos-btn)) > .card { grid-column: 1 !important; }
-  .sos-screen > .sos-btn {
-    grid-column: 1;
-    /* !important: the component sets height inline for the phone layout. */
-    height: clamp(190px, 34vh, 320px) !important;
+  /* ---- SOS: one centred column ------------------------------------------
+     Tried this as two columns and it read badly: a full-height red slab down
+     one side with an empty column of past alerts beside it. An emergency
+     screen wants one obvious thing to hit, centred, with nothing competing
+     for the eye - so it keeps a single column and just gets bigger. */
+  .sos-screen {
+    grid-template-columns: minmax(0, 620px);
+    justify-content: center;
   }
-  .sos-screen > .card:last-of-type { grid-column: 2; grid-row: 1 / span 2; }
+  .sos-screen > * { grid-column: 1; }
+  .sos-screen > .sos-btn {
+    /* !important: the component sets height inline for the phone layout. */
+    height: clamp(190px, 30vh, 300px) !important;
+  }
+
+  /* Four emergency types as a balanced 2x2. auto-fit wrapped them 3-then-1,
+     which reads as a mistake, and the odd one out was the smallest target on
+     the screen someone reaches for in a panic. */
+  .sos-screen .chips { grid-template-columns: 1fr 1fr; }
+  .sos-screen .chip { min-height: 66px; font-size: 15px; }
 
   /* ---- Mesh: state left, explanation right ------------------------------
      The demo explainer is the least urgent thing on the screen, so it stops
@@ -454,6 +458,37 @@ hr.sep { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
   .topbar { padding: 6px 14px; }
   .topbar .brand img { width: 26px; height: 26px; }
   .topbar .brand span { display: none; }
+
+  /* The report form is one column now, and on a ~600px dash screen that column
+     is taller than the viewport - Submit ends up below the fold, which is the
+     one thing that must never happen on this screen. Tighten it rather than
+     splitting the form back across two columns: three across turns five chips
+     from three rows into two, and the note box does not need to be tall to be
+     usable. */
+  .report-screen .chips { grid-template-columns: repeat(3, 1fr); }
+  .report-screen .chip { min-height: 48px; }
+  .report-screen textarea.input { min-height: 56px; height: 56px; }
+  .report-screen .sep { margin: 8px 0; }
+  .report-screen h3 { margin-bottom: 4px; }
+
+  /* Even compacted, the form is ~110px taller than a 600px dash screen. Rather
+     than shave the rest of the content down to nothing, pin the action: Submit
+     stays on screen while the fields above it scroll. The driver can always
+     see how to send, which is the property that actually matters. */
+  .report-screen .btn.primary.block {
+    position: sticky;
+    bottom: -2px;
+    z-index: 5;
+    /* Solid spread in the card colour masks the fields scrolling underneath,
+       then a soft fade above it so the edge is not a hard line. The spread
+       follows the border-radius, which an outline would not. */
+    box-shadow:
+      0 0 0 10px var(--surface),
+      0 -20px 18px -6px var(--surface);
+  }
+
+  /* Past alerts can scroll out of view; the button never should. */
+  .sos-screen .chip { min-height: 54px; }
 }
 
 /* Portrait phones keep the map at its designed height. */
