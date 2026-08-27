@@ -67,6 +67,52 @@ def test_closed_segment_maps_to_blocked(client):
     assert seen == {"blocked"} or not seen
 
 
+def test_restricted_never_reaches_the_driver_as_clear(client):
+    """A restricted road is restricted whatever the weather is doing.
+
+    Status is an operational fact - single-lane working, convoy timings,
+    daylight-only - and it does not stop applying because the model happens to
+    score the segment low today. Seven segments were reaching drivers as
+    "clear" while the control room had them restricted, the Teesta gorge
+    stretch of NH-10 among them.
+    """
+    contract = {s["id"]: s for s in
+                client.get("/segments", params={"limit": 1000}).json()}
+
+    seen = 0
+    for vehicle in client.get("/vehicles").json():
+        route = client.get("/api/routes/current",
+                           params={"vehicle_id": vehicle["vehicle_id"]}).json()
+        for segment in route["segments"]:
+            source = contract.get(segment["id"])
+            if not source:
+                continue
+            seen += 1
+            if source["status"] == "closed":
+                assert segment["status"] == "blocked", segment["id"]
+            elif source["status"] == "restricted":
+                assert segment["status"] in {"caution", "high_risk"}, (
+                    f"{segment['id']} is restricted but the driver sees "
+                    f"{segment['status']!r}")
+    assert seen, "no segments checked"
+
+
+def test_driver_and_dashboard_agree_on_risk(client):
+    """One number per road. The two views may name it differently, not value it
+    differently."""
+    contract = {s["id"]: s for s in
+                client.get("/segments", params={"limit": 1000}).json()}
+    for vehicle in client.get("/vehicles").json():
+        route = client.get("/api/routes/current",
+                           params={"vehicle_id": vehicle["vehicle_id"]}).json()
+        for segment in route["segments"]:
+            source = contract.get(segment["id"])
+            if source:
+                assert abs(source["risk"] - segment["risk"]) < 1e-9, (
+                    f"{segment['id']}: driver {segment['risk']} vs "
+                    f"dashboard {source['risk']}")
+
+
 def test_known_vehicle_gets_its_own_route(client):
     route = client.get("/api/routes/current",
                        params={"vehicle_id": "SK-01-J-4471"}).json()

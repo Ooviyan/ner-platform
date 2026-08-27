@@ -979,13 +979,27 @@ def driver_route(db: Optional[Session], vehicle_id: Optional[str] = None) -> Opt
 
 
 def seed_driver_status(status: str, risk: float) -> str:
+    """Contract status + model risk -> the driver app's colour vocabulary.
+
+    `restricted` must never come out as "clear". It is an operational fact -
+    single-lane working, convoy timings, daylight-only - and it holds whatever
+    the weather is doing. The earlier version keyed off risk alone once a road
+    was not closed, so on a dry day the Teesta gorge stretch of NH-10 reached
+    the driver as a clear road while the control room had it restricted. Seven
+    segments were being misreported that way.
+
+    Risk can still raise the level, never lower it below what status implies.
+    """
     if status == "closed":
         return "blocked"
-    if risk >= 0.6:
-        return "high_risk"
-    if risk >= 0.3:
-        return "caution"
-    return "clear"
+
+    by_risk = ("high_risk" if risk >= 0.6
+               else "caution" if risk >= 0.3
+               else "clear")
+
+    if status == "restricted":
+        return "high_risk" if by_risk == "high_risk" else "caution"
+    return by_risk
 
 
 # In-memory ping log, used when PostGIS is not connected.
