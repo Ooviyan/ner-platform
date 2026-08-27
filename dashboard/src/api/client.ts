@@ -1,4 +1,8 @@
-const API_URL = import.meta.env.VITE_API_URL || "/mock-data";
+// Defaults to the live platform, not the fixtures: .env is gitignored, so this
+// fallback is what a fresh clone runs on, and a dashboard quietly showing four
+// hand-written sample roads while claiming to be an operations centre is worse
+// than one that fails loudly. Set VITE_API_URL=/mock-data to work offline.
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 /**
  * True when we are pointed at the static fixtures rather than a real backend.

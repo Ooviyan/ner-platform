@@ -307,7 +307,7 @@ def _model_route(db: Optional[Session], origin: geo.Coord, origin_name: str,
     if not ml.available():
         return None
 
-    segments = list_segments(db, limit=10_000)
+    segments = scored_segments(db)
     if not segments:
         return None
     reports = list_reports(db, limit=1_000)
@@ -409,7 +409,7 @@ def find_route(
     route["profile"] = profile
     route["generated_at"] = _iso(_now())
 
-    segments = [s for s in (get_segment(db, sid) for sid in route["segments"]) if s]
+    segments = scored_segments(db, route["segments"])
     if segments:
         speeds = _FAST_BY_BAND if profile == "fastest" else _SPEED_BY_BAND
         eta = sum(s["length_km"] / speeds[s["risk_band"]] * 60 for s in segments)
@@ -776,6 +776,26 @@ def resolve_vehicle(db: Optional[Session], vehicle_id: Optional[str]) -> Optiona
     return (on_chosen or fleet)[0]
 
 
+def scored_segments(db: Optional[Session], ids: Optional[Sequence[str]] = None,
+                    limit: int = 10_000) -> list[dict]:
+    """Segments carrying the model's risk and accessibility, not the stored column.
+
+    GET /segments serves model-scored rows, so anything else that shows a
+    segment's risk has to score it the same way or the platform contradicts
+    itself - the driver app was showing 0.34 on a road the control room had at
+    0.015, because one read the model and the other read the seeded column.
+    """
+    from app.intelligence import ml
+
+    rows = list_segments(db, limit=limit)
+    if ids is not None:
+        wanted = set(ids)
+        rows = [r for r in rows if r["id"] in wanted]
+    if not rows or not ml.available():
+        return rows
+    return ml.score(rows, list_reports(db, limit=1_000))
+
+
 def driver_route(db: Optional[Session], vehicle_id: Optional[str] = None) -> Optional[dict]:
     """The assigned route for a vehicle, in the driver app's nested shape."""
     vehicle = resolve_vehicle(db, vehicle_id)
@@ -803,9 +823,11 @@ def driver_route(db: Optional[Session], vehicle_id: Optional[str] = None) -> Opt
     dest_name, dest_state = _split_place(route["destination"])
     speeds = _SPEED_BY_BAND
 
+    # Model-scored, so the driver and the control room quote the same number.
+    by_id = {s["id"]: s for s in scored_segments(db, route["segments"])}
     segments = []
     for sid in route["segments"]:
-        seg = get_segment(db, sid)
+        seg = by_id.get(sid)
         if not seg:
             continue
         eta = seg["length_km"] / speeds[seg["risk_band"]] * 60

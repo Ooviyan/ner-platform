@@ -238,6 +238,7 @@ class Health(BaseModel):
     version: str
     database: Dict[str, Any]
     intelligence: Dict[str, Any] = {}
+    weather: Dict[str, Any] = {}
     counts: Dict[str, int]
 
 

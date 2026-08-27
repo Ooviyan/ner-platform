@@ -65,6 +65,11 @@ class Settings:
 
     # A container-started Postgres accepts connections a few seconds after the
     # healthcheck first passes, so retry before giving up on it.
+    # Pull real rainfall from Open-Meteo into road_segments on this cadence.
+    # Off means the seeded values stand, and every risk score is fiction.
+    weather_refresh_enabled: bool = _flag("WEATHER_REFRESH_ENABLED", True)
+    weather_refresh_minutes: int = int(os.getenv("WEATHER_REFRESH_MINUTES", "30"))
+
     db_connect_retries: int = int(os.getenv("DB_CONNECT_RETRIES", "10"))
     db_connect_delay: float = float(os.getenv("DB_CONNECT_DELAY", "1.5"))
 

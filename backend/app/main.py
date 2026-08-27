@@ -20,6 +20,7 @@ from app import store
 from app.config import settings
 from app.database import SessionLocal, db_available, db_status, get_db, init_db
 from app.routers import alerts, compat, reports, routes, segments, vehicles, ws
+from app import weather_refresh
 from app.intelligence import ml
 from app.schemas import Health
 from app.simulation import simulator
@@ -88,12 +89,15 @@ async def lifespan(app: FastAPI):
 
     simulator.set_tick_callback(persist)
     simulator.start()
+    # Real rainfall into the DB, so risk scores are not computed from fiction.
+    weather_refresh.start()
     log.info(
         "%s ready - CORS origins: %s", settings.app_name, ", ".join(settings.cors_origins)
     )
     try:
         yield
     finally:
+        await weather_refresh.stop()
         await simulator.stop()
 
 
@@ -136,6 +140,7 @@ def health(db: Optional[Session] = Depends(get_db)):
         "version": settings.version,
         "database": db_status(),
         "intelligence": ml.status(),
+        "weather": weather_refresh.last_result(),
         "counts": {
             "segments": len(store.list_segments(db, limit=10_000)),
             "routes": len(store.list_routes(db)),
