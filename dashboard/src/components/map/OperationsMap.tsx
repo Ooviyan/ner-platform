@@ -28,6 +28,8 @@ import {
   REPORTS_STROKE_LAYER,
   ROUTES_CASING_LAYER,
   ROUTES_LAYER,
+  SEGMENT_CASING_COLOR,
+  SEGMENT_CASING_LAYERS,
   SEGMENT_INTERACTIVE_LAYERS,
   SEGMENT_STATUS_LAYERS,
   SOURCE_IDS,
@@ -215,10 +217,45 @@ export default function OperationsMap({
         ["linear"],
         ["zoom"],
         5,
-        ["case", ["boolean", ["feature-state", "selected"], false], 4.5, ["boolean", ["feature-state", "hover"], false], 3.5, 2],
+        ["case", ["boolean", ["feature-state", "selected"], false], 6, ["boolean", ["feature-state", "hover"], false], 5, 3.4],
         10,
-        ["case", ["boolean", ["feature-state", "selected"], false], 7.5, ["boolean", ["feature-state", "hover"], false], 6, 3.5],
+        ["case", ["boolean", ["feature-state", "selected"], false], 10, ["boolean", ["feature-state", "hover"], false], 8.5, 5.5],
       ];
+
+      // The casing tracks the coloured line and sits ~3px wider on each side.
+      const casingWidthExpr: maplibregl.ExpressionSpecification = [
+        "interpolate",
+        ["linear"],
+        ["zoom"],
+        5,
+        ["case", ["boolean", ["feature-state", "selected"], false], 10, ["boolean", ["feature-state", "hover"], false], 9, 6.6],
+        10,
+        ["case", ["boolean", ["feature-state", "selected"], false], 15, ["boolean", ["feature-state", "hover"], false], 13.5, 10],
+      ];
+
+      // Casings first, all of them, so no coloured line is ever drawn under
+      // another road's outline.
+      (
+        [
+          { status: "open", layerId: SEGMENT_CASING_LAYERS.open },
+          { status: "restricted", layerId: SEGMENT_CASING_LAYERS.restricted },
+          { status: "closed", layerId: SEGMENT_CASING_LAYERS.closed },
+        ] as const
+      ).forEach(({ status, layerId }) => {
+        map.addLayer({
+          id: layerId,
+          type: "line",
+          source: SOURCE_IDS.segments,
+          filter: ["==", ["get", "status"], status],
+          layout: { "line-cap": "round", "line-join": "round" },
+          paint: {
+            "line-color": SEGMENT_CASING_COLOR,
+            "line-width": casingWidthExpr,
+            "line-opacity": 0.85,
+            "line-blur": 0.4,
+          },
+        });
+      });
 
       (
         [
@@ -518,6 +555,12 @@ export default function OperationsMap({
             : ["all", ["==", ["get", "status"], status], ["==", ["get", "riskLevel"], riskFilter]];
 
         map.setFilter(layerId, filter);
+
+        // Keep the casing in lockstep, or filtering out a road leaves its
+        // outline behind as a black ghost.
+        const casingId = SEGMENT_CASING_LAYERS[status];
+        map.setLayoutProperty(casingId, "visibility", statusVisible ? "visible" : "none");
+        map.setFilter(casingId, filter);
       },
     );
   }, [ready, statusFilter, riskFilter]);

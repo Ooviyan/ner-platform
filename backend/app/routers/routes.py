@@ -40,14 +40,32 @@ def get_route(
                             profile=profile, avoid_closed=avoid_closed)
 
 
-@router.get("/routes", response_model=List[Route], summary="Pre-computed corridors")
-def list_routes(state: Optional[str] = Query(None), db: Optional[Session] = Depends(get_db)):
-    return store.list_routes(db, state=state)
+@router.get("/routes", response_model=List[Route], summary="Corridors")
+def list_routes(
+    state: Optional[str] = Query(None),
+    recompute: bool = Query(
+        True,
+        description="Re-path each corridor against current risk. false returns "
+                    "the stored definition, which is what ../mock-data holds.",
+    ),
+    db: Optional[Session] = Depends(get_db),
+):
+    """Every corridor, re-pathed against current conditions.
+
+    The path, ETA and risk come from the router, so this list and what a driver
+    is actually told are the same journey. `recompute=false` returns the stored
+    definition instead.
+    """
+    return store.list_routes(db, state=state, recompute=recompute)
 
 
 @router.get("/routes/{route_id}", response_model=Route, summary="One corridor")
-def get_route_by_id(route_id: str, db: Optional[Session] = Depends(get_db)):
-    route = store.get_route(db, route_id)
+def get_route_by_id(
+    route_id: str,
+    recompute: bool = Query(True),
+    db: Optional[Session] = Depends(get_db),
+):
+    route = store.get_route(db, route_id, recompute=recompute)
     if route is None:
         raise HTTPException(404, f"route {route_id!r} not found")
     return route

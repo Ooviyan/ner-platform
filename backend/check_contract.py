@@ -43,7 +43,7 @@ MOCK_DIR = _find_mock_dir()
 # contract, field for field, which is the guarantee the frontends actually need.
 CHECKS = [
     ("segments.json", "/segments?scored=false", "id"),
-    ("routes.json", "/routes", "id"),
+    ("routes.json", "/routes?recompute=false", "id"),
     ("vehicles.json", "/vehicles", "vehicle_id"),
     ("reports.json", "/reports", "event_id"),
     ("alerts.json", "/alerts", "id"),
@@ -69,6 +69,7 @@ def _from_seed(path: str) -> list:
     from app import seed
     return {
         "/segments?scored=false": seed.SEGMENTS,
+        "/routes?recompute=false": seed.ROUTES,
         "/segments": seed.SEGMENTS, "/routes": seed.ROUTES,
         "/vehicles": seed.VEHICLES, "/reports": seed.REPORTS,
         "/alerts": seed.ALERTS,
