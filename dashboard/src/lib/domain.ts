@@ -12,10 +12,14 @@ export function riskLevel(risk: number): RiskLevel {
   return "normal";
 }
 
+// Saturated on purpose. The earlier muted set (#71a985 / #c19a58 / #c66b6b)
+// was chosen against a flat background; over map tiles it sat at roughly the
+// same luminance as the terrain and the roads disappeared into it. These read
+// at a glance from across a control room, which is the actual requirement.
 export const RISK_COLORS: Record<RiskLevel, string> = {
-  normal: "#71a985",
-  warning: "#c19a58",
-  critical: "#c66b6b",
+  normal: "#34d399",
+  warning: "#fbbf24",
+  critical: "#fb5a68",
 };
 
 export const RISK_LABELS: Record<RiskLevel, string> = {

@@ -58,11 +58,14 @@ export const BASEMAP_SOURCE_SPEC = {
   attribution: BASEMAP_ATTRIBUTION,
 };
 
+// Pushed well back. The basemap exists to tell an operator *where* a road is,
+// not to be looked at - so it sits below the road network in both luminance
+// and saturation, and the coloured lines carry all the signal.
 export const BASEMAP_PAINT = {
-  "raster-opacity": 0.82,
-  "raster-saturation": -0.55,
-  "raster-contrast": 0.1,
-  "raster-brightness-max": 0.66,
+  "raster-opacity": 0.5,
+  "raster-saturation": -0.72,
+  "raster-contrast": -0.08,
+  "raster-brightness-max": 0.45,
 };
 
 export const SOURCE_IDS = {
@@ -77,6 +80,18 @@ export const SEGMENT_STATUS_LAYERS = {
   restricted: "segments-restricted",
   closed: "segments-closed",
 } as const;
+
+// A dark stroke drawn underneath each coloured line. Standard cartography: it
+// separates the road from whatever tile happens to be beneath it, so a green
+// segment stays readable over a pale river bed and a red one over dark forest.
+// Same keys as above so the filter effect can drive both from one loop.
+export const SEGMENT_CASING_LAYERS = {
+  open: "segments-open-casing",
+  restricted: "segments-restricted-casing",
+  closed: "segments-closed-casing",
+} as const;
+
+export const SEGMENT_CASING_COLOR = "#04080e";
 
 export const ROUTES_LAYER = "routes-line";
 export const ROUTES_CASING_LAYER = "routes-line-casing";
