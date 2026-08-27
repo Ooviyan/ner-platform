@@ -81,6 +81,7 @@ export function RoadIntelligencePanel({
                         value={segment.accessibility}
                         tone={segment.accessibility < 40 ? "critical" : segment.accessibility < 70 ? "warning" : "normal"}
                       />
+                      {segment.why && <p className="road-row-why">{segment.why}</p>}
                     </button>
                   </li>
                 );

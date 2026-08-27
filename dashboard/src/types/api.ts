@@ -8,6 +8,21 @@ export interface Segment {
     type: "LineString";
     coordinates: [number, number][];
   };
+  /**
+   * Added by the ML layer when the backend scores a segment with the model
+   * (GET /segments, which is the default). A plain-English reading of the SHAP
+   * attribution behind `risk` — "driven by 402 mm of rain over 72h and a 26
+   * degree slope". Optional: `?scored=false` and the static fixtures omit it.
+   */
+  why?: string;
+  /** Model detail: SHAP contributions, penalty breakdown, and which source
+   *  each feature came from (open-meteo / nasa-glc / backend). */
+  ml?: {
+    band?: string;
+    report_signal?: number;
+    sources?: Record<string, string>;
+    shap?: { feature: string; value: number; contribution: number; direction: string }[];
+  };
 }
 
 export interface Route {
