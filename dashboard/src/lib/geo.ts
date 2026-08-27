@@ -9,6 +9,8 @@ export interface SegmentFeatureProperties {
   accessibility: number;
   status: string;
   riskLevel: string;
+  /** Plain-English SHAP reading from the ML layer; absent on static fixtures. */
+  why?: string;
 }
 
 export type SegmentFeatureCollection = FeatureCollection<LineString, SegmentFeatureProperties>;
@@ -28,6 +30,7 @@ export function segmentsToFeatureCollection(segments: Segment[]): SegmentFeature
           accessibility: segment.accessibility,
           status: segment.status,
           riskLevel: riskLevel(segment.risk),
+          why: segment.why,
         },
       }),
     ),

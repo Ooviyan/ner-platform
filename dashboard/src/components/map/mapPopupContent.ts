@@ -33,6 +33,7 @@ export function buildSegmentPopup(props: SegmentFeatureProperties): HTMLElement 
   root.append(row("Status", STATUS_LABELS[props.status] ?? props.status));
   root.append(row("Risk", `${RISK_LABELS[riskLevel(props.risk)]} (${props.risk.toFixed(2)})`));
   root.append(row("Accessibility", `${props.accessibility}%`));
+  if (props.why) root.append(row("Why", props.why));
   return root;
 }
 
