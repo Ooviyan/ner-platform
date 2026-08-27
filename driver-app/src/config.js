@@ -3,8 +3,15 @@
 
 const env = import.meta.env
 
-/** Base URL we read/write platform data from. `/mock-data` = standalone mode. */
-export const API_URL = (env.VITE_API_URL || '/mock-data').replace(/\/+$/, '')
+/**
+ * Base URL we read/write platform data from.
+ *
+ * Defaults to the live platform, not the fixtures: .env is gitignored, so this
+ * fallback is what a fresh clone runs on, and a driver app showing a stale
+ * sample route while a real one exists is the wrong failure. Set
+ * VITE_API_URL=/mock-data to run standalone with no backend.
+ */
+export const API_URL = (env.VITE_API_URL || 'http://localhost:8000').replace(/\/+$/, '')
 
 /** True when we are pointed at the static fixtures rather than a real backend. */
 export const MOCK_MODE = API_URL.endsWith('/mock-data')

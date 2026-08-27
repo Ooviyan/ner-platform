@@ -15,7 +15,11 @@ import {
 import { INCIDENT_TYPE_DEFAULT_COLOR, RISK_COLORS, incidentTypeColor } from "../../lib/domain";
 import { buildReportPopup, buildRoutePopup, buildSegmentPopup } from "./mapPopupContent";
 import {
-  EMPTY_STYLE,
+  BASEMAP_LAYER,
+  BASEMAP_PAINT,
+  BASEMAP_SOURCE,
+  BASEMAP_SOURCE_SPEC,
+  createEmptyStyle,
   NER_BOUNDS,
   NER_CENTER,
   NER_INITIAL_ZOOM,
@@ -121,10 +125,12 @@ export default function OperationsMap({
       try {
         map = new maplibregl.Map({
           container: containerRef.current,
-          style: EMPTY_STYLE,
+          style: createEmptyStyle(),
           center: NER_CENTER,
           zoom: NER_INITIAL_ZOOM,
-          attributionControl: false,
+          // OpenStreetMap's tile policy requires visible attribution; compact
+          // keeps it to a small (i) that expands on click.
+          attributionControl: { compact: true },
         });
       } catch (err) {
         const message = err instanceof Error ? err.message : "Map failed to initialize.";
@@ -139,6 +145,27 @@ export default function OperationsMap({
       });
 
       map.on("load", () => {
+      // Basemap first, so every layer below is drawn over it.
+      //
+      // Added here rather than in the initial style on purpose: MapLibre's
+      // "load" event waits for the initial style's sources, so a basemap in
+      // there means a control centre on a slow or dead link never becomes
+      // ready and the road network - the actual job of this view - never
+      // draws. This way the roads come up immediately and the terrain fills
+      // in behind them, and if it never arrives the map still works.
+      try {
+        map.addSource(BASEMAP_SOURCE, BASEMAP_SOURCE_SPEC);
+        map.addLayer({
+          id: BASEMAP_LAYER,
+          type: "raster",
+          source: BASEMAP_SOURCE,
+          paint: BASEMAP_PAINT,
+        });
+      } catch (err) {
+        // Never fatal: the operational layers matter, the terrain does not.
+        console.warn("basemap unavailable, continuing without it", err);
+      }
+
       map.addSource(SOURCE_IDS.graticule, {
         type: "geojson",
         data: buildGraticule(NER_BOUNDS, NER_LAT_RANGE, 2),
@@ -156,6 +183,12 @@ export default function OperationsMap({
       map.addSource(SOURCE_IDS.segments, {
         type: "geojson",
         data: segmentsFC,
+        // Feature ids must be integers, or integer-castable strings. Ours are
+        // "SEG-SK-NH10-001", so MapLibre discards them and every
+        // setFeatureState({id}) call below silently does nothing - hover and
+        // selection highlighting included. promoteId lifts the id out of
+        // properties instead, which accepts arbitrary strings.
+        promoteId: "id",
       });
 
       const riskColorExpression: maplibregl.ExpressionSpecification = [
@@ -215,6 +248,7 @@ export default function OperationsMap({
       map.addSource(SOURCE_IDS.routes, {
         type: "geojson",
         data: routesFC,
+        promoteId: "id",
       });
 
       map.addLayer({
@@ -265,6 +299,7 @@ export default function OperationsMap({
       map.addSource(SOURCE_IDS.reports, {
         type: "geojson",
         data: reportsFC,
+        promoteId: "event_id",
       });
 
       const incidentColorExpr: maplibregl.ExpressionSpecification = [
