@@ -1,0 +1,104 @@
+.route-panel {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden auto;
+}
+
+.route-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.route-row {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 7px;
+  padding: 11px 16px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.route-row:hover {
+  background: #131b23;
+}
+
+.route-row.selected {
+  border-left: 2px solid #6fa8dc;
+  background: #142230;
+}
+
+.route-row-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.route-row-path {
+  color: #dfe7ee;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.route-arrow {
+  color: #55758e;
+}
+
+.route-row-stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  color: #7d8c9c;
+  font-size: 10px;
+}
+
+.route-row-stats b {
+  color: #b8c5d1;
+}
+
+.route-row-segments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 0 16px 11px;
+  border-bottom: 1px solid #1a232c;
+}
+
+.route-segment-chip {
+  padding: 3px 8px;
+  border: 1px solid #263340;
+  border-radius: 4px;
+  background: #131b23;
+  color: #8997a6;
+  cursor: pointer;
+  font-size: 9px;
+}
+
+.route-segment-chip:hover:not(:disabled) {
+  border-color: #354555;
+  color: #dce5ed;
+}
+
+.route-segment-chip.selected {
+  border-color: #3f6e94;
+  background: #16283a;
+  color: #cfe6f7;
+}
+
+.route-segment-chip.unresolved,
+.route-segment-chip:disabled {
+  border-style: dashed;
+  color: #586978;
+  cursor: not-allowed;
+}

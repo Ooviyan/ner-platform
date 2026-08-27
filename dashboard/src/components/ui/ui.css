@@ -1,0 +1,229 @@
+.data-state {
+  display: flex;
+  min-height: 200px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 25px;
+  text-align: center;
+  color: #647585;
+}
+
+.data-state.compact {
+  min-height: 110px;
+  padding: 16px;
+}
+
+.data-state-spinner {
+  color: #55758e;
+  animation: spin 900ms linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.data-state svg {
+  margin-bottom: 3px;
+  color: #526474;
+}
+
+.data-state strong {
+  color: #909eac;
+  font-size: 12px;
+}
+
+.data-state span:not(.data-state-detail) {
+  max-width: 260px;
+  color: #586978;
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.data-state-error strong {
+  color: #c98787;
+}
+
+.data-state-error svg {
+  color: #c66b6b;
+}
+
+.data-state-detail {
+  max-width: 280px;
+  color: #647585;
+  font-size: 9px;
+  word-break: break-word;
+}
+
+.retry-button {
+  padding: 6px 14px;
+  border: 1px solid #354555;
+  border-radius: 5px;
+  background: #151e27;
+  color: #b8c5d1;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.retry-button:hover {
+  border-color: #4a6076;
+  background: #1a242f;
+  color: #dcecf8;
+}
+
+/* Skeleton loading rows -------------------------------------------------- */
+
+.skeleton-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.skeleton-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 13px 16px;
+  border-bottom: 1px solid #1a232c;
+}
+
+.skeleton-bar {
+  height: 9px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #161e26 0%, #202b36 50%, #161e26 100%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+.skeleton-bar-wide {
+  width: 68%;
+}
+
+.skeleton-bar-narrow {
+  width: 38%;
+  height: 7px;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-bar {
+    animation: none;
+  }
+}
+
+/* Status / severity badges --------------------------------------------- */
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border: 1px solid #263340;
+  border-radius: 4px;
+  background: #131b23;
+  color: #aab6c1;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.status-badge-mark {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+
+.status-badge.tone-normal .status-badge-mark {
+  background: #71a985;
+}
+
+.status-badge.tone-warning .status-badge-mark {
+  background: #c19a58;
+}
+
+.status-badge.tone-critical .status-badge-mark {
+  background: #c66b6b;
+}
+
+.status-badge.tone-info .status-badge-mark {
+  background: #6d9ec5;
+}
+
+.status-badge.tone-neutral .status-badge-mark {
+  background: #8b95a0;
+}
+
+.status-badge.tone-critical {
+  border-color: #4a2c2c;
+  background: #201414;
+  color: #e0a8a8;
+}
+
+.status-badge.tone-warning {
+  border-color: #453a22;
+  background: #1e1810;
+  color: #dcc191;
+}
+
+.status-badge.tone-normal {
+  border-color: #223b2c;
+  background: #101d16;
+  color: #a7d1b8;
+}
+
+/* Metric bar -------------------------------------------------------------- */
+
+.metric-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.metric-bar-track {
+  position: relative;
+  height: 5px;
+  flex: 1;
+  overflow: hidden;
+  border-radius: 3px;
+  background: #1a232c;
+}
+
+.metric-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: #6d9ec5;
+}
+
+.metric-bar-fill.tone-warning {
+  background: #c19a58;
+}
+
+.metric-bar-fill.tone-critical {
+  background: #c66b6b;
+}
+
+.metric-bar-value {
+  min-width: 32px;
+  color: #9aa9b7;
+  font-size: 10px;
+  font-weight: 650;
+  text-align: right;
+}

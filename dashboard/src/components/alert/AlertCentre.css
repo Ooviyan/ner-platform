@@ -1,0 +1,101 @@
+.alert-panel {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden auto;
+}
+
+.alert-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.alert-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 11px 16px;
+  border-bottom: 1px solid #1a232c;
+}
+
+.alert-row-top {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.alert-severity-mark {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+
+.alert-severity-label {
+  color: #dfe7ee;
+  font-size: 10px;
+  text-transform: capitalize;
+}
+
+.alert-status {
+  margin-left: auto;
+  padding: 2px 8px;
+  border: 1px solid #263340;
+  border-radius: 10px;
+  color: #8997a6;
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.alert-status.status-sent {
+  border-color: #223b2c;
+  color: #a7d1b8;
+}
+
+.alert-status.status-acknowledged {
+  border-color: #1f3448;
+  color: #9cc4e6;
+}
+
+.alert-status.status-pending {
+  border-color: #453a22;
+  color: #dcc191;
+}
+
+.alert-status.status-failed {
+  border-color: #4a2c2c;
+  color: #e0a8a8;
+}
+
+.alert-event {
+  color: #7d8c9c;
+  font-size: 9.5px;
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+}
+
+.alert-row-meta {
+  display: flex;
+  gap: 12px;
+  color: #7d8c9c;
+  font-size: 9.5px;
+}
+
+.alert-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.alert-recipients {
+  overflow: hidden;
+  color: #55758e;
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
