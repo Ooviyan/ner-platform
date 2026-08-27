@@ -143,7 +143,9 @@ def health(db: Optional[Session] = Depends(get_db)):
         "weather": weather_refresh.last_result(),
         "counts": {
             "segments": len(store.list_segments(db, limit=10_000)),
-            "routes": len(store.list_routes(db)),
+            # recompute=False: /health is polled by the container healthcheck
+            # every 30s and only needs a count, not eleven A* searches.
+            "routes": len(store.list_routes(db, recompute=False)),
             "vehicles": len(store.list_vehicles(db)),
             "alerts": len(store.list_alerts(db, active=None)),
             "reports": len(store.list_reports(db, limit=10_000)),

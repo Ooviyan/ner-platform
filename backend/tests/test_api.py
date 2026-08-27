@@ -43,6 +43,10 @@ CONTRACT = [
 LIVE = {
     "/vehicles": {"progress", "status"},
     "/segments": {"risk", "accessibility"},
+    # /routes is re-pathed against current risk on every request, so the path
+    # and its numbers are the router's answer, not the fixture's. Freezing them
+    # would mean the dashboard could never show what a driver is actually told.
+    "/routes": {"risk", "eta_min", "delay_min", "segments", "chosen"},
 }
 
 
@@ -136,6 +140,34 @@ def test_segment_detail_and_404(client):
 
 
 # --------------------------------------------------------------- routes ---
+def test_routes_list_matches_what_a_driver_is_told(client):
+    """The dashboard's corridor and the driver's route must be one journey.
+
+    They were three different answers: /routes served the stored corridor,
+    /api/routes/current re-pathed from the corridor's geometry (which starts
+    50 km from its own named origin), and /route re-pathed from the place. The
+    control room quoted 214 minutes on NH-10 while the driver was sent over the
+    Rorathang bypass in 55.
+    """
+    routes = {r["id"]: r for r in client.get("/routes").json()}
+    for vehicle in client.get("/vehicles").json():
+        route_id = vehicle.get("route_id")
+        if route_id not in routes:
+            continue
+        driver = client.get("/api/routes/current",
+                            params={"vehicle_id": vehicle["vehicle_id"]}).json()
+        assert [s["id"] for s in driver["segments"]] == routes[route_id]["segments"], (
+            f"{vehicle['vehicle_id']} on {route_id}: driver and dashboard disagree")
+        assert driver["eta_min"] == routes[route_id]["eta_min"]
+
+
+def test_recompute_false_returns_the_stored_corridor(client):
+    """The escape hatch back to exactly what mock-data defines."""
+    stored = {r["id"]: r for r in
+              client.get("/routes", params={"recompute": "false"}).json()}
+    assert stored["RTE-1001"]["segments"] == ["SEG-SK-NH10-001", "SEG-SK-NH10-002"]
+
+
 def test_route_between_known_places(client):
     route = client.get("/route", params={"from": "Siliguri", "to": "Gangtok"}).json()
     assert route["segments"]

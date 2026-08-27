@@ -165,6 +165,51 @@ class Intelligence:
             log.exception("model routing failed")
             return None
 
+    def route_many(self, segments: Sequence[dict],
+                   pairs: Sequence[tuple[str, tuple[float, float], tuple[float, float]]],
+                   reports: Sequence[dict] | None = None,
+                   profile: str = "safest",
+                   live_weather: bool = False) -> dict[str, dict]:
+        """A* for several origin/destination pairs over ONE shared graph.
+
+        Recomputing /routes means routing every corridor on every request.
+        Building the graph is the expensive half - it scores all segments - so
+        it is built once and reused, rather than once per corridor.
+        """
+        if not self._load() or not segments or not pairs:
+            return {}
+        routing = self._modules["routing"]
+        connect = self._modules["connect"]
+        try:
+            import networkx as nx
+
+            kwargs = {}
+            if profile in DISRUPTION_COST_BY_PROFILE:
+                kwargs["disruption_cost_min"] = DISRUPTION_COST_BY_PROFILE[profile]
+            graph = connect.live_graph(list(segments), None, list(reports or []),
+                                       live=live_weather, **kwargs)
+            if graph.number_of_nodes() == 0:
+                return {}
+
+            out: dict[str, dict] = {}
+            for key, origin, destination in pairs:
+                start = self._nearest_node(graph, origin)
+                end = self._nearest_node(graph, destination)
+                if start is None or end is None or start == end:
+                    continue
+                if not nx.has_path(graph, start, end):
+                    continue
+                try:
+                    out[key] = (routing.fastest_route(graph, start, end)
+                                if profile == "fastest"
+                                else routing.safest_route(graph, start, end))
+                except Exception:
+                    log.debug("no route for %s", key, exc_info=True)
+            return out
+        except Exception:
+            log.exception("batch routing failed")
+            return {}
+
     def alternatives(self, segments: Sequence[dict], origin: tuple[float, float],
                      destination: tuple[float, float],
                      reports: Sequence[dict] | None = None,

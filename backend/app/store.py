@@ -247,20 +247,92 @@ def nearest_segment(db: Optional[Session], point: geo.Coord) -> Optional[dict]:
 
 
 # ----------------------------------------------------------------- routes ---
-def list_routes(db: Optional[Session], state: Optional[str] = None) -> List[dict]:
+def _recompute_routes(db: Optional[Session], rows: List[dict]) -> List[dict]:
+    """Re-path every corridor against current risk, over one shared graph.
+
+    Without this the dashboard lists the stored corridor while the driver is
+    sent down whatever the router actually picked - the same journey shown as
+    two different roads in two places. The stored row keeps its id, name and
+    endpoints; the path, ETA and risk come from the router.
+    """
+    from app.intelligence import ml
+
+    if not rows or not ml.available():
+        return rows
+
+    pairs = []
+    for row in rows:
+        origin, destination = route_endpoints(row)
+        if origin and destination:
+            pairs.append((row["id"], origin, destination))
+    if not pairs:
+        return rows
+
+    segments = scored_segments(db)
+    computed = ml.route_many(segments, pairs, list_reports(db, limit=1_000))
+    if not computed:
+        return rows
+
+    by_id = {s["id"]: s for s in segments}
+    out = []
+    for row in rows:
+        found = computed.get(row["id"])
+        if not found:
+            out.append({**row, "computed_by": "stored"})
+            out[-1]["advisories"] = list(row.get("advisories", [])) + [
+                "No path found in the current network; showing the stored corridor."]
+            continue
+
+        used = [by_id[s] for s in found["segments"] if s in by_id]
+        closed = [s["id"] for s in used if s["status"] == "closed"]
+        coords: List[geo.Coord] = []
+        for segment in used:
+            pts = [tuple(c) for c in segment["geometry"]["coordinates"]]
+            if coords and coords[-1] == pts[0]:
+                pts = pts[1:]
+            coords.extend(pts)
+
+        risk = round(float(found["risk"]), 4)
+        out.append({
+            **row,
+            "eta_min": found["eta_min"],
+            "delay_min": max(0, found["delay_min"]),
+            "risk": risk,
+            "risk_band": seed.risk_band(risk),
+            "segments": found["segments"],
+            "distance_km": found.get("distance_km"),
+            "accessibility": found.get("min_accessibility"),
+            "passable": not closed and found.get("advisory") != "no_safe_route",
+            "closed_segments": closed,
+            "geometry": geo.linestring(coords) if coords else row.get("geometry"),
+            "generated_at": _iso(_now()),
+            "computed_by": "ml.routing.a-star",
+        })
+    return out
+
+
+def list_routes(db: Optional[Session], state: Optional[str] = None,
+                recompute: bool = True) -> List[dict]:
     rows = (_fetch(db, Route, _route_row, order_by=[Route.id])
             if db is not None else deepcopy(MEMORY.routes))
+    if recompute:
+        rows = _recompute_routes(db, rows)
     if not state:
         return rows
     keep = {s["id"] for s in list_segments(db, state=state, limit=10_000)}
     return [r for r in rows if keep.intersection(r["segments"])]
 
 
-def get_route(db: Optional[Session], route_id: str) -> Optional[dict]:
+def get_route(db: Optional[Session], route_id: str,
+              recompute: bool = True) -> Optional[dict]:
     if db is not None:
         found = _fetch(db, Route, _route_row, [Route.id == route_id], limit=1)
-        return found[0] if found else None
-    return next((deepcopy(r) for r in MEMORY.routes if r["id"] == route_id), None)
+        row = found[0] if found else None
+    else:
+        row = next((deepcopy(r) for r in MEMORY.routes if r["id"] == route_id), None)
+    if row is None or not recompute:
+        return row
+    return _recompute_routes(db, [row])[0]
 
 
 # Speed a vehicle sustains on a segment of each risk band (km/h), and the
@@ -390,7 +462,7 @@ def find_route(
         if computed is not None:
             return computed
 
-    candidates = list_routes(db)
+    candidates = list_routes(db, recompute=False)
     scored = sorted(candidates, key=lambda r: _score(r, origin, destination))
     best = scored[0] if scored else None
 
@@ -776,6 +848,30 @@ def resolve_vehicle(db: Optional[Session], vehicle_id: Optional[str]) -> Optiona
     return (on_chosen or fleet)[0]
 
 
+def route_endpoints(route: dict) -> tuple:
+    """A corridor's true (origin, destination) coordinates.
+
+    Prefers the named places over the stored geometry. The two disagree in the
+    shared fixtures: RTE-1001 is labelled "Siliguri, West Bengal" but its
+    segments begin at Rangpo, 50 km up the valley. Routing from the geometry
+    gave the driver a 55-minute run for a journey the control room quotes at
+    over three hours, on a different set of roads.
+    """
+    from app.places import resolve
+
+    def pick(label: Optional[str], point: Optional[dict]) -> Optional[geo.Coord]:
+        if label:
+            found = resolve(str(label).split(",")[0].strip())
+            if found:
+                return found[0]
+        if point and point.get("lng") is not None:
+            return (float(point["lng"]), float(point["lat"]))
+        return None
+
+    return (pick(route.get("origin"), route.get("origin_point")),
+            pick(route.get("destination"), route.get("destination_point")))
+
+
 def scored_segments(db: Optional[Session], ids: Optional[Sequence[str]] = None,
                     limit: int = 10_000) -> list[dict]:
     """Segments carrying the model's risk and accessibility, not the stored column.
@@ -801,7 +897,10 @@ def driver_route(db: Optional[Session], vehicle_id: Optional[str] = None) -> Opt
     vehicle = resolve_vehicle(db, vehicle_id)
     if vehicle is None:
         return None
-    assigned = get_route(db, vehicle.get("route_id")) if vehicle.get("route_id") else None
+    # recompute=False: this function routes the corridor itself just below,
+    # and re-pathing it here would run A* twice for one request.
+    assigned = (get_route(db, vehicle["route_id"], recompute=False)
+                if vehicle.get("route_id") else None)
     if assigned is None:
         candidates = list_routes(db)
         assigned = next((r for r in candidates if r["chosen"]),
@@ -813,11 +912,12 @@ def driver_route(db: Optional[Session], vehicle_id: Optional[str] = None) -> Opt
     # recomputed on every request against current risk. Returning the stored
     # corridor would hand the driver a route chosen before today's rain.
     route = assigned
-    start, end = assigned["origin_point"], assigned["destination_point"]
-    live = _model_route(db, (start["lng"], start["lat"]), assigned["origin"],
-                        (end["lng"], end["lat"]), assigned["destination"], "safest")
-    if live is not None:
-        route = {**assigned, **live, "id": assigned["id"]}
+    start, end = route_endpoints(assigned)
+    if start and end:
+        live = _model_route(db, start, assigned["origin"],
+                            end, assigned["destination"], "safest")
+        if live is not None:
+            route = {**assigned, **live, "id": assigned["id"]}
 
     origin_name, origin_state = _split_place(route["origin"])
     dest_name, dest_state = _split_place(route["destination"])
