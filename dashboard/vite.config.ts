@@ -85,6 +85,18 @@ function serveRootMockData(): Plugin {
 }
 
 export default defineConfig({
+  // MapLibre ships its renderer worker as a separate chunk. Vite's dependency
+  // pre-bundling rewrites the import but not the worker URL, so
+  // /node_modules/.vite/deps/maplibre-gl-worker.mjs 404s in dev. Without the
+  // worker no GeoJSON source ever finishes parsing: isStyleLoaded() stays
+  // false, every source reports 0 features, and the map renders an empty
+  // background with the layers present but nothing in them.
+  optimizeDeps: {
+    exclude: ["maplibre-gl"],
+  },
+  worker: {
+    format: "es",
+  },
   plugins: [react(), serveRootMockData()],
   server: {
     port: 3000,

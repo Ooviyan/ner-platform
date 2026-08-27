@@ -10,19 +10,28 @@ export const NER_INITIAL_ZOOM = 5.6;
 
 // No external tile service is used (no API key, no network dependency) —
 // the map is a plain background plus a generated lat/lng reference grid.
-export const EMPTY_STYLE: StyleSpecification = {
-  version: 8,
-  sources: {},
-  layers: [
-    {
-      id: "background",
-      type: "background",
-      paint: {
-        "background-color": "#0b1119",
+// A FUNCTION, not a shared const.
+//
+// MapLibre takes ownership of the style object it is given and mutates it as
+// the style loads. Handing the same object to a second Map - which React
+// StrictMode guarantees in development, and any remount causes in production -
+// gives that map an already-consumed style, and it renders nothing at all.
+// Returning a fresh object per call makes each map independent.
+export function createEmptyStyle(): StyleSpecification {
+  return {
+    version: 8,
+    sources: {},
+    layers: [
+      {
+        id: "background",
+        type: "background",
+        paint: {
+          "background-color": "#0b1119",
+        },
       },
-    },
-  ],
-};
+    ],
+  };
+}
 
 export const SOURCE_IDS = {
   graticule: "graticule",

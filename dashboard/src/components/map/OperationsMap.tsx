@@ -15,7 +15,7 @@ import {
 import { INCIDENT_TYPE_DEFAULT_COLOR, RISK_COLORS, incidentTypeColor } from "../../lib/domain";
 import { buildReportPopup, buildRoutePopup, buildSegmentPopup } from "./mapPopupContent";
 import {
-  EMPTY_STYLE,
+  createEmptyStyle,
   NER_BOUNDS,
   NER_CENTER,
   NER_INITIAL_ZOOM,
@@ -121,7 +121,7 @@ export default function OperationsMap({
       try {
         map = new maplibregl.Map({
           container: containerRef.current,
-          style: EMPTY_STYLE,
+          style: createEmptyStyle(),
           center: NER_CENTER,
           zoom: NER_INITIAL_ZOOM,
           attributionControl: false,
@@ -156,6 +156,12 @@ export default function OperationsMap({
       map.addSource(SOURCE_IDS.segments, {
         type: "geojson",
         data: segmentsFC,
+        // Feature ids must be integers, or integer-castable strings. Ours are
+        // "SEG-SK-NH10-001", so MapLibre discards them and every
+        // setFeatureState({id}) call below silently does nothing - hover and
+        // selection highlighting included. promoteId lifts the id out of
+        // properties instead, which accepts arbitrary strings.
+        promoteId: "id",
       });
 
       const riskColorExpression: maplibregl.ExpressionSpecification = [
@@ -215,6 +221,7 @@ export default function OperationsMap({
       map.addSource(SOURCE_IDS.routes, {
         type: "geojson",
         data: routesFC,
+        promoteId: "id",
       });
 
       map.addLayer({
@@ -265,6 +272,7 @@ export default function OperationsMap({
       map.addSource(SOURCE_IDS.reports, {
         type: "geojson",
         data: reportsFC,
+        promoteId: "event_id",
       });
 
       const incidentColorExpr: maplibregl.ExpressionSpecification = [
